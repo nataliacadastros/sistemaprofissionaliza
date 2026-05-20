@@ -31,7 +31,7 @@ function ordenarAlunos(a: any, b: any) {
   return Number(b["ID"] || 0) - Number(a["ID"] || 0);
 }
 
-export default function Home() {
+export default function GerenciamentoPage() {
   const [alunos, setAlunos] = useState<any[]>([]);
 
   const [filtros, setFiltros] = useState({
@@ -86,6 +86,7 @@ export default function Home() {
       .filter((a) =>
         Object.entries(filtros).every(([campo, valor]) => {
           if (!valor) return true;
+
           return String(a[campo] || "")
             .toLowerCase()
             .includes(valor.toLowerCase());
@@ -113,10 +114,10 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
-      <div className="fixed top-0 left-0 z-50 flex h-[38px] w-full items-center justify-center gap-2 bg-[#edbe13]">
+      <div className="fixed left-0 top-0 z-50 flex h-[38px] w-full items-center justify-center gap-2 bg-[#edbe13]">
         {[
           ["📑 CADASTRO", "/cadastro"],
-          ["🖥️ GERENCIAMENTO", "/"],
+          ["🖥️ GERENCIAMENTO", "/gerenciamento"],
           ["📊 RELATÓRIOS", "/relatorios"],
           ["📤 SUBIR ALUNOS", "/subir-alunos"],
           ["📤 SUBIR ALUNOS DE INGLÊS", "/subir-alunos-ingles"],
@@ -135,12 +136,13 @@ export default function Home() {
         ))}
       </div>
 
-      <section className="pt-14 px-8">
+      <section className="px-8 pt-14">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-black text-white">
               ▣ LISTAGEM DE ALUNOS
             </h1>
+
             <p className="text-xs text-cyan-300">
               {filtrados.length} registros encontrados
             </p>
@@ -164,6 +166,7 @@ export default function Home() {
             <HeaderFiltro label="Tel. responsável" value={filtros["Tel. Resp"]} onChange={(v: string) => alterarFiltro("Tel. Resp", v)} />
             <HeaderFiltro label="Tel. aluno" value={filtros["Tel. Aluno"]} onChange={(v: string) => alterarFiltro("Tel. Aluno", v)} />
             <HeaderFiltro label="Curso contratado" value={filtros.Curso} onChange={(v: string) => alterarFiltro("Curso", v)} />
+
             <div className="p-3 text-center">Ações</div>
           </div>
 
@@ -238,6 +241,7 @@ function HeaderFiltro({
   return (
     <div className="border-r border-[#12375f] p-2">
       <div className="mb-1">{label}</div>
+
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
