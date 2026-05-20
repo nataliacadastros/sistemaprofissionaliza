@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
-// @ts-ignore
-import Plot from "react-plotly.js";
+
+const Plot = dynamic(() => import("react-plotly.js"), {
+  ssr: false,
+});
 
 function parseDataBR(data?: string) {
   if (!data) return null;
