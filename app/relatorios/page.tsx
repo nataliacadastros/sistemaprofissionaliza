@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+// @ts-ignore
 import Plot from "react-plotly.js";
 
 function parseDataBR(data?: string) {
