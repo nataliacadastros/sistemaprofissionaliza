@@ -113,7 +113,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
-      {/* MENU */}
       <div className="fixed top-0 left-0 z-50 flex h-[38px] w-full items-center justify-center gap-2 bg-[#edbe13]">
         {[
           ["📑 CADASTRO", "/cadastro"],
@@ -136,7 +135,6 @@ export default function Home() {
         ))}
       </div>
 
-      {/* CONTEÚDO */}
       <section className="pt-14 px-8">
         <div className="mb-5 flex items-center justify-between">
           <div>
@@ -156,17 +154,16 @@ export default function Home() {
           </button>
         </div>
 
-        {/* TABELA */}
         <div className="overflow-hidden rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
           <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[10px] font-black uppercase text-slate-200">
-            <HeaderFiltro label="Status" value={filtros.STATUS} onChange={(v) => alterarFiltro("STATUS", v)} />
-            <HeaderFiltro label="Data cadastro" value={filtros["Data Cadastro"]} onChange={(v) => alterarFiltro("Data Cadastro", v)} />
-            <HeaderFiltro label="ID do aluno" value={filtros.ID} onChange={(v) => alterarFiltro("ID", v)} />
-            <HeaderFiltro label="Nome completo" value={filtros.Aluno} onChange={(v) => alterarFiltro("Aluno", v)} />
-            <HeaderFiltro label="Cidade" value={filtros.Cidade} onChange={(v) => alterarFiltro("Cidade", v)} />
-            <HeaderFiltro label="Tel. responsável" value={filtros["Tel. Resp"]} onChange={(v) => alterarFiltro("Tel. Resp", v)} />
-            <HeaderFiltro label="Tel. aluno" value={filtros["Tel. Aluno"]} onChange={(v) => alterarFiltro("Tel. Aluno", v)} />
-            <HeaderFiltro label="Curso contratado" value={filtros.Curso} onChange={(v) => alterarFiltro("Curso", v)} />
+            <HeaderFiltro label="Status" value={filtros.STATUS} onChange={(v: string) => alterarFiltro("STATUS", v)} />
+            <HeaderFiltro label="Data cadastro" value={filtros["Data Cadastro"]} onChange={(v: string) => alterarFiltro("Data Cadastro", v)} />
+            <HeaderFiltro label="ID do aluno" value={filtros.ID} onChange={(v: string) => alterarFiltro("ID", v)} />
+            <HeaderFiltro label="Nome completo" value={filtros.Aluno} onChange={(v: string) => alterarFiltro("Aluno", v)} />
+            <HeaderFiltro label="Cidade" value={filtros.Cidade} onChange={(v: string) => alterarFiltro("Cidade", v)} />
+            <HeaderFiltro label="Tel. responsável" value={filtros["Tel. Resp"]} onChange={(v: string) => alterarFiltro("Tel. Resp", v)} />
+            <HeaderFiltro label="Tel. aluno" value={filtros["Tel. Aluno"]} onChange={(v: string) => alterarFiltro("Tel. Aluno", v)} />
+            <HeaderFiltro label="Curso contratado" value={filtros.Curso} onChange={(v: string) => alterarFiltro("Curso", v)} />
             <div className="p-3 text-center">Ações</div>
           </div>
 
@@ -177,11 +174,13 @@ export default function Home() {
               className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[11px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
             >
               <div className="flex items-center border-r border-[#12375f] p-3">
-                <span className={`rounded-md px-3 py-1 text-[10px] font-black ${
-                  aluno["STATUS"] === "CANCELADO"
-                    ? "bg-red-950 text-red-300"
-                    : "bg-green-950 text-green-300"
-                }`}>
+                <span
+                  className={`rounded-md px-3 py-1 text-[10px] font-black ${
+                    aluno["STATUS"] === "CANCELADO"
+                      ? "bg-red-950 text-red-300"
+                      : "bg-green-950 text-green-300"
+                  }`}
+                >
                   {aluno["STATUS"] || "ATIVO"}
                 </span>
               </div>
@@ -227,7 +226,15 @@ export default function Home() {
   );
 }
 
-function HeaderFiltro({ label, value, onChange }: any) {
+function HeaderFiltro({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div className="border-r border-[#12375f] p-2">
       <div className="mb-1">{label}</div>
