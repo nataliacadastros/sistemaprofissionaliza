@@ -229,7 +229,7 @@ export default function CadastroPage() {
 
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
-      <div className="fixed top-0 left-0 z-50 flex h-[38px] w-full items-center justify-center gap-2 bg-[#edbe13]">
+      <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
         {[
           ["📑 CADASTRO", "/cadastro"],
           ["🖥️ GERENCIAMENTO", "/gerenciamento"],
@@ -240,7 +240,7 @@ export default function CadastroPage() {
           <a
             key={tab}
             href={href}
-            className={`rounded-md border px-5 py-1 text-xs font-bold ${
+            className={`shrink-0 rounded-md border px-5 py-2 text-xs font-bold md:py-1 ${
               tab.includes("CADASTRO")
                 ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_0_10px_rgba(0,242,255,.6)]"
                 : "border-slate-700/30 bg-white/20 text-[#1f295a]"
@@ -251,8 +251,8 @@ export default function CadastroPage() {
         ))}
       </div>
 
-      <section className="mx-auto max-w-6xl px-8 pt-16">
-        <div className="rounded-2xl border border-[#12375f] bg-[#071b31] p-8 shadow-2xl">
+      <section className="mx-auto w-full max-w-6xl px-4 pt-20 md:px-8 md:pt-16">
+        <div className="rounded-2xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl md:p-8">
           <Campo label="ID:" value={form.id} onChange={(v: string) => atualizar("id", v)} />
           <Campo label="ALUNO:" value={form.aluno} onChange={(v: string) => atualizar("aluno", v)} />
           <Campo label="TEL. RESPONSÁVEL:" value={form.telResp} onChange={(v: string) => atualizar("telResp", v)} />
@@ -272,17 +272,17 @@ export default function CadastroPage() {
           <Campo label="VENDEDOR:" value={form.vendedor} onChange={(v: string) => atualizar("vendedor", v)} />
           <Campo label="DATA DA MATRÍCULA:" value={form.dataMatricula} onChange={(v: string) => atualizar("dataMatricula", v)} />
 
-          <div className="mt-5 grid grid-cols-[230px_1fr] items-center gap-4">
+          <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-[230px_1fr] md:items-center md:gap-4">
             <div></div>
 
-            <div className="flex items-center justify-center gap-8">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Check label="LIB. IN-GLÊS" checked={checks.ingles} onChange={(v: boolean) => alterarCheckbox("ingles", v)} />
               <Check label="CURSO BÔNUS" checked={checks.bonus} onChange={(v: boolean) => alterarCheckbox("bonus", v)} />
               <Check label="CONFIRMAÇÃO" checked={checks.confirmacao} onChange={(v: boolean) => alterarCheckbox("confirmacao", v)} />
             </div>
           </div>
 
-          <div className="mt-7 grid grid-cols-2 gap-4">
+          <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-2">
             <button onClick={salvarAluno} className="rounded-md bg-cyan-400 px-6 py-3 font-black text-black">
               💾 SALVAR ALUNO
             </button>
@@ -293,13 +293,13 @@ export default function CadastroPage() {
         </div>
 
         {lista.length > 0 && (
-          <div className="mt-6 rounded-xl border border-[#12375f] bg-[#071b31] p-5 shadow-2xl">
+          <div className="mt-6 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl md:p-5">
             <h2 className="mb-3 text-sm font-black text-cyan-300">
               📋 PRÉ-VISUALIZAÇÃO ({lista.length} ALUNOS)
             </h2>
 
-            <div className="overflow-auto rounded-lg border border-[#12375f]">
-              <table className="w-full text-left text-xs">
+            <div className="overflow-x-auto rounded-lg border border-[#12375f]">
+              <table className="min-w-[900px] text-left text-xs">
                 <thead className="bg-[#0c2743] text-cyan-300">
                   <tr>
                     {Object.keys(lista[0]).map((k) => (
@@ -342,8 +342,8 @@ export default function CadastroPage() {
 
 function Campo({ label, value, onChange, onBlur, onEnter }: any) {
   return (
-    <div className="mb-3 grid grid-cols-[230px_1fr] items-center gap-4">
-      <label className="text-right text-sm font-black text-cyan-300">
+    <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-[230px_1fr] md:items-center md:gap-4">
+      <label className="text-left text-sm font-black text-cyan-300 md:text-right">
         {label}
       </label>
 
@@ -357,7 +357,7 @@ function Campo({ label, value, onChange, onBlur, onEnter }: any) {
             onEnter();
           }
         }}
-        className="rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
+        className="w-full rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
       />
     </div>
   );
@@ -365,7 +365,7 @@ function Campo({ label, value, onChange, onBlur, onEnter }: any) {
 
 function Check({ label, checked, onChange }: any) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-xs font-black text-green-400">
+    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-[#12375f] bg-[#0b1f36] px-3 py-2 text-xs font-black text-green-400">
       <input
         type="checkbox"
         checked={checked}
