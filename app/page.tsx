@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 
 function converterDataBR(data?: string) {
   if (!data) return 0;
   const partes = String(data).split("/");
   if (partes.length !== 3) return 0;
+
   const [dia, mes, ano] = partes;
   return new Date(`${ano}-${mes}-${dia}`).getTime();
 }
@@ -35,6 +36,7 @@ function ordenarAlunos(a: any, b: any) {
 export default function GerenciamentoPage() {
   const [alunos, setAlunos] = useState<any[]>([]);
   const [pesquisa, setPesquisa] = useState("");
+  const [mostrarDownload, setMostrarDownload] = useState(false);
   const [dataDownload, setDataDownload] = useState("");
 
   useEffect(() => {
@@ -63,11 +65,11 @@ export default function GerenciamentoPage() {
         inicio += tamanho;
       }
 
-      const ordenado = todos
-        .filter((a) => a["ID"] && a["Aluno"])
-        .sort(ordenarAlunos);
-
-      setAlunos(ordenado);
+      setAlunos(
+        todos
+          .filter((a) => a["ID"] && a["Aluno"])
+          .sort(ordenarAlunos)
+      );
     }
 
     buscarTodosAlunos();
@@ -87,13 +89,9 @@ export default function GerenciamentoPage() {
       .sort(ordenarAlunos);
   }, [alunos, pesquisa]);
 
-  function limparPesquisa() {
-    setPesquisa("");
-  }
-
   function baixarAlunosPorData() {
     if (!dataDownload) {
-      alert("Selecione uma data de cadastro.");
+      alert("Selecione uma data.");
       return;
     }
 
@@ -133,28 +131,38 @@ export default function GerenciamentoPage() {
       { wch: 22 },
       { wch: 18 },
       { wch: 18 },
-      { wch: 45 },
+      { wch: 50 },
     ];
 
+    // Cabeçalho
+    colunas.forEach((_, colIndex) => {
+      const celula = `${XLSX.utils.encode_col(colIndex)}1`;
+      if (ws[celula]) {
+        ws[celula].s = {
+          font: { bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "0C2743" } },
+          alignment: { horizontal: "center" },
+        };
+      }
+    });
+
+    // Curso TECNOLOGIA em vermelho
     alunosDaData.forEach((aluno, index) => {
       const curso = String(aluno["Curso"] || "").toUpperCase();
 
       if (curso.includes("TECNOLOGIA")) {
         const linhaExcel = index + 2;
+        const colunaCurso = colunas.indexOf("Curso");
+        const celulaCurso = `${XLSX.utils.encode_col(colunaCurso)}${linhaExcel}`;
 
-        colunas.forEach((_, colIndex) => {
-          const letra = XLSX.utils.encode_col(colIndex);
-          const celula = `${letra}${linhaExcel}`;
-
-          if (ws[celula]) {
-            ws[celula].s = {
-              font: {
-                color: { rgb: "FF0000" },
-                bold: true,
-              },
-            };
-          }
-        });
+        if (ws[celulaCurso]) {
+          ws[celulaCurso].s = {
+            font: {
+              color: { rgb: "FF0000" },
+              bold: true,
+            },
+          };
+        }
       }
     });
 
@@ -200,7 +208,7 @@ export default function GerenciamentoPage() {
             </p>
           </div>
 
-          <div className="flex w-[620px] items-center gap-3">
+          <div className="flex w-[720px] items-center gap-3">
             <input
               value={pesquisa}
               onChange={(e) => setPesquisa(e.target.value)}
@@ -209,39 +217,44 @@ export default function GerenciamentoPage() {
             />
 
             <button
-              onClick={limparPesquisa}
+              onClick={() => setPesquisa("")}
               className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-cyan-100"
             >
               LIMPAR
             </button>
-          </div>
-        </div>
-
-        <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
-          <div className="mb-2 text-xs font-black uppercase text-cyan-300">
-            Baixar alunos por Data Cadastro
-          </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              type="date"
-              value={dataDownload}
-              onChange={(e) => setDataDownload(e.target.value)}
-              className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
-            />
 
             <button
-              onClick={baixarAlunosPorData}
-              className="rounded-md bg-green-700 px-5 py-2 text-xs font-black text-white hover:bg-green-600"
+              onClick={() => setMostrarDownload((prev) => !prev)}
+              className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white hover:bg-green-600"
             >
-              📥 BAIXAR EXCEL
+              BAIXAR ALUNOS
             </button>
-
-            <span className="text-xs font-bold text-slate-400">
-              Cursos TECNOLOGIA serão destacados em vermelho.
-            </span>
           </div>
         </div>
+
+        {mostrarDownload && (
+          <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
+            <div className="mb-2 text-xs font-black uppercase text-cyan-300">
+              Selecione a Data Cadastro para baixar
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input
+                type="date"
+                value={dataDownload}
+                onChange={(e) => setDataDownload(e.target.value)}
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
+              />
+
+              <button
+                onClick={baixarAlunosPorData}
+                className="rounded-md bg-green-700 px-5 py-2 text-xs font-black text-white hover:bg-green-600"
+              >
+                📥 BAIXAR EXCEL
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="overflow-hidden rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
           <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
