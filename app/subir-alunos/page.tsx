@@ -39,11 +39,8 @@ function normalizarChave(chave: string) {
 
 function pegarCPF(a: any) {
   if (!a) return "";
-
   const chaveCPF = Object.keys(a).find((chave) => normalizarChave(chave) === "CPF");
-
   if (!chaveCPF) return "";
-
   return limparValor(a[chaveCPF]);
 }
 
@@ -127,9 +124,7 @@ export default function SubirAlunosPage() {
 
   function toggleCidade(cidade: string) {
     setCidadesSelecionadas((prev) =>
-      prev.includes(cidade)
-        ? prev.filter((c) => c !== cidade)
-        : [...prev, cidade]
+      prev.includes(cidade) ? prev.filter((c) => c !== cidade) : [...prev, cidade]
     );
   }
 
@@ -363,11 +358,7 @@ export default function SubirAlunosPage() {
 
             {["MANUAL", "AUTOMÁTICO"].map((m) => (
               <label key={m} className="flex cursor-pointer items-center gap-2 text-xs font-black">
-                <input
-                  type="radio"
-                  checked={modo === m}
-                  onChange={() => setModo(m)}
-                />
+                <input type="radio" checked={modo === m} onChange={() => setModo(m)} />
                 {m}
               </label>
             ))}
@@ -490,6 +481,47 @@ export default function SubirAlunosPage() {
         >
           🚀 PROCESSAR DADOS
         </button>
+
+        {dfFinal && dfFinal.length > 0 && (
+          <div className="mt-6 rounded-xl border border-[#12375f] bg-[#071b31] p-5 shadow-2xl">
+            <h2 className="mb-4 text-sm font-black text-cyan-300">
+              👁️ PRÉ-VISUALIZAÇÃO GERAL ({dfFinal.length} ALUNOS)
+            </h2>
+
+            <div className="overflow-auto rounded-lg border border-[#12375f]">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#0c2743] text-cyan-300">
+                  <tr>
+                    {Object.keys(dfFinal[0]).map((k) => (
+                      <th key={k} className="whitespace-nowrap p-2">
+                        {k}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {dfFinal.map((linha, i) => (
+                    <tr key={i} className="border-t border-[#12375f]">
+                      {Object.values(linha).map((v: any, j) => (
+                        <td
+                          key={j}
+                          className={`whitespace-nowrap p-2 ${
+                            Object.keys(linha)[j] === "document" && !limparValor(v)
+                              ? "bg-red-950 text-red-300"
+                              : ""
+                          }`}
+                        >
+                          {limparValor(v)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {pendentes.length > 0 && (
           <div className="mt-6 rounded-xl border border-yellow-600 bg-[#2b2507] p-5">
