@@ -17,33 +17,19 @@ function ordenarAlunos(a: any, b: any) {
   const ordemA = Number(a["Ordem"] || 0);
   const ordemB = Number(b["Ordem"] || 0);
 
-  if (ordemA !== ordemB) {
-    return ordemB - ordemA;
-  }
+  if (ordemA !== ordemB) return ordemB - ordemA;
 
   const dataA = converterDataBR(a["Data Cadastro"]);
   const dataB = converterDataBR(b["Data Cadastro"]);
 
-  if (dataA !== dataB) {
-    return dataB - dataA;
-  }
+  if (dataA !== dataB) return dataB - dataA;
 
   return Number(b["ID"] || 0) - Number(a["ID"] || 0);
 }
 
 export default function GerenciamentoPage() {
   const [alunos, setAlunos] = useState<any[]>([]);
-
-  const [filtros, setFiltros] = useState({
-    STATUS: "",
-    "Data Cadastro": "",
-    ID: "",
-    Aluno: "",
-    Cidade: "",
-    "Tel. Resp": "",
-    "Tel. Aluno": "",
-    Curso: "",
-  });
+  const [pesquisa, setPesquisa] = useState("");
 
   useEffect(() => {
     async function buscarTodosAlunos() {
@@ -82,34 +68,21 @@ export default function GerenciamentoPage() {
   }, []);
 
   const filtrados = useMemo(() => {
+    const termo = pesquisa.trim().toLowerCase();
+
     return alunos
-      .filter((a) =>
-        Object.entries(filtros).every(([campo, valor]) => {
-          if (!valor) return true;
+      .filter((a) => {
+        if (!termo) return true;
 
-          return String(a[campo] || "")
-            .toLowerCase()
-            .includes(valor.toLowerCase());
-        })
-      )
+        return Object.values(a).some((valor) =>
+          String(valor || "").toLowerCase().includes(termo)
+        );
+      })
       .sort(ordenarAlunos);
-  }, [alunos, filtros]);
+  }, [alunos, pesquisa]);
 
-  function alterarFiltro(campo: string, valor: string) {
-    setFiltros((prev) => ({ ...prev, [campo]: valor }));
-  }
-
-  function limparFiltros() {
-    setFiltros({
-      STATUS: "",
-      "Data Cadastro": "",
-      ID: "",
-      Aluno: "",
-      Cidade: "",
-      "Tel. Resp": "",
-      "Tel. Aluno": "",
-      Curso: "",
-    });
+  function limparPesquisa() {
+    setPesquisa("");
   }
 
   return (
@@ -137,7 +110,7 @@ export default function GerenciamentoPage() {
       </div>
 
       <section className="px-8 pt-14">
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-5 flex items-center justify-between gap-5">
           <div>
             <h1 className="text-lg font-black text-white">
               ▣ LISTAGEM DE ALUNOS
@@ -148,25 +121,33 @@ export default function GerenciamentoPage() {
             </p>
           </div>
 
-          <button
-            onClick={limparFiltros}
-            className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-cyan-100"
-          >
-            LIMPAR FILTROS
-          </button>
+          <div className="flex w-[620px] items-center gap-3">
+            <input
+              value={pesquisa}
+              onChange={(e) => setPesquisa(e.target.value)}
+              placeholder="Pesquisar por nome, ID, cidade, telefone, curso, status..."
+              className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
+            />
+
+            <button
+              onClick={limparPesquisa}
+              className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-cyan-100"
+            >
+              LIMPAR
+            </button>
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
-          <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[10px] font-black uppercase text-slate-200">
-            <HeaderFiltro label="Status" value={filtros.STATUS} onChange={(v: string) => alterarFiltro("STATUS", v)} />
-            <HeaderFiltro label="Data cadastro" value={filtros["Data Cadastro"]} onChange={(v: string) => alterarFiltro("Data Cadastro", v)} />
-            <HeaderFiltro label="ID do aluno" value={filtros.ID} onChange={(v: string) => alterarFiltro("ID", v)} />
-            <HeaderFiltro label="Nome completo" value={filtros.Aluno} onChange={(v: string) => alterarFiltro("Aluno", v)} />
-            <HeaderFiltro label="Cidade" value={filtros.Cidade} onChange={(v: string) => alterarFiltro("Cidade", v)} />
-            <HeaderFiltro label="Tel. responsável" value={filtros["Tel. Resp"]} onChange={(v: string) => alterarFiltro("Tel. Resp", v)} />
-            <HeaderFiltro label="Tel. aluno" value={filtros["Tel. Aluno"]} onChange={(v: string) => alterarFiltro("Tel. Aluno", v)} />
-            <HeaderFiltro label="Curso contratado" value={filtros.Curso} onChange={(v: string) => alterarFiltro("Curso", v)} />
-
+          <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
+            <div className="border-r border-[#12375f] p-3">Status</div>
+            <div className="border-r border-[#12375f] p-3">Data cadastro</div>
+            <div className="border-r border-[#12375f] p-3">ID do aluno</div>
+            <div className="border-r border-[#12375f] p-3">Nome completo</div>
+            <div className="border-r border-[#12375f] p-3">Cidade</div>
+            <div className="border-r border-[#12375f] p-3">Tel. responsável</div>
+            <div className="border-r border-[#12375f] p-3">Tel. aluno</div>
+            <div className="border-r border-[#12375f] p-3">Curso contratado</div>
             <div className="p-3 text-center">Ações</div>
           </div>
 
@@ -226,28 +207,5 @@ export default function GerenciamentoPage() {
         </div>
       </section>
     </main>
-  );
-}
-
-function HeaderFiltro({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="border-r border-[#12375f] p-2">
-      <div className="mb-1">{label}</div>
-
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Filtrar"
-        className="w-full rounded bg-white px-2 py-1 text-[10px] font-bold text-black outline-none"
-      />
-    </div>
   );
 }
