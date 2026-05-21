@@ -13,6 +13,15 @@ const Plot: any = dynamic(
   { ssr: false }
 );
 
+function pegarDataMatricula(a: any) {
+  return (
+    a["Data Matrícula"] ||
+    a["Data Matricula"] ||
+    a["Data Matr�cula"] ||
+    ""
+  );
+}
+
 function parseDataBR(data?: string) {
   if (!data) return null;
   const partes = String(data).split("/");
@@ -139,7 +148,7 @@ export default function Relatorios() {
 
   const filtrado = useMemo(() => {
     return dados.filter((a) => {
-      const d = parseDataBR(a["Data Matrícula"]);
+      const d = parseDataBR(pegarDataMatricula(a));
       if (!d) return false;
 
       if (inicio && d < new Date(`${inicio}T00:00:00`)) return false;
