@@ -139,7 +139,7 @@ export default function Relatorios() {
 
   const filtrado = useMemo(() => {
     return dados.filter((a) => {
-      const d = parseDataBR(a["Data Matricula"]);
+      const d = parseDataBR(a["Data Matrícula"]);
       if (!d) return false;
 
       if (inicio && d < new Date(`${inicio}T00:00:00`)) return false;
