@@ -240,7 +240,7 @@ export default function SubirAlunosPage() {
       const primeiroNome = partesNome[0]?.toUpperCase() || "";
       const sobrenome = String(item.Nome || "")
         .trim()
-        .replace(partesNome[0] || "")
+        .replace(partesNome[0] || "", "")
         .trim()
         .toUpperCase();
 
