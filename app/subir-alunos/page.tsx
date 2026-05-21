@@ -29,8 +29,22 @@ function limparValor(valor: any) {
   return String(valor);
 }
 
+function normalizarChave(chave: string) {
+  return chave
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
 function pegarCPF(a: any) {
-  return limparValor(a["CPF"]);
+  if (!a) return "";
+
+  const chaveCPF = Object.keys(a).find((chave) => normalizarChave(chave) === "CPF");
+
+  if (!chaveCPF) return "";
+
+  return limparValor(a[chaveCPF]);
 }
 
 export default function SubirAlunosPage() {
