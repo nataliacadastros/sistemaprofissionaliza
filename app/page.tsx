@@ -100,6 +100,7 @@ export default function GerenciamentoPage() {
     const alunosDaData = alunos
       .filter((a) => String(a["Data Cadastro"] || "") === dataBR)
       .sort(ordenarAlunos);
+      .reverse();
 
     if (alunosDaData.length === 0) {
       alert("Nenhum aluno encontrado nessa data.");
