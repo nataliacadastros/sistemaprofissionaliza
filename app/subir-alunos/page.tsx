@@ -29,6 +29,10 @@ function limparValor(valor: any) {
   return String(valor);
 }
 
+function pegarCPF(a: any) {
+  return limparValor(a["CPF"]);
+}
+
 export default function SubirAlunosPage() {
   const [modo, setModo] = useState("AUTOMÁTICO");
   const [dados, setDados] = useState<any[]>([]);
@@ -197,12 +201,12 @@ export default function SubirAlunosPage() {
         User: limparValor(r["ID"]),
         Nome: limparValor(r["Aluno"]),
         Cell: limparValor(r["Tel. Aluno"]),
-        Doc: limparValor(r["CPF"]),
+        Doc: pegarCPF(r),
         City: limparValor(r["Cidade"]),
         Cour: limparValor(r["Curso"]),
         Pay: limparValor(r["Pagamento"]),
         Sell: limparValor(r["Vendedor"]),
-        Date: limparValor(r["Data Matricula"]),
+        Date: limparValor(r["Data Matricula"] || r["Data Matrícula"]),
       }));
     }
 
@@ -236,7 +240,7 @@ export default function SubirAlunosPage() {
       const primeiroNome = partesNome[0]?.toUpperCase() || "";
       const sobrenome = String(item.Nome || "")
         .trim()
-        .replace(partesNome[0] || "", "")
+        .replace(partesNome[0] || "")
         .trim()
         .toUpperCase();
 
