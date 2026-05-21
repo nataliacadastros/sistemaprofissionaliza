@@ -20,6 +20,10 @@ function limparValor(valor: any) {
   return String(valor);
 }
 
+function pegarCPF(a: any) {
+  return limparValor(a["CPF"]);
+}
+
 function baixarCSV(nomeArquivo: string, linhas: any[]) {
   if (linhas.length === 0) return;
 
@@ -117,7 +121,7 @@ export default function SubirAlunosInglesPage() {
         lastname: sobrenome,
         profile_field_telresp: limparValor(a["Tel. Resp"]),
         profile_field_telaluno: limparValor(a["Tel. Aluno"]),
-        profile_field_CPF: limparValor(a["CPF"]),
+        profile_field_CPF: pegarCPF(a),
         city: limparValor(a.Cidade).toUpperCase(),
         password: "futuro",
         course1: turmaIngles,
