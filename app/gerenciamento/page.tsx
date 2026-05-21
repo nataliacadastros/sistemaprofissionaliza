@@ -2,15 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import * as XLSX from "xlsx";
 
 function converterDataBR(data?: string) {
   if (!data) return 0;
-
   const partes = String(data).split("/");
   if (partes.length !== 3) return 0;
-
   const [dia, mes, ano] = partes;
   return new Date(`${ano}-${mes}-${dia}`).getTime();
+}
+
+function isoParaBR(dataISO: string) {
+  if (!dataISO) return "";
+  const [ano, mes, dia] = dataISO.split("-");
+  return `${dia}/${mes}/${ano}`;
 }
 
 function ordenarAlunos(a: any, b: any) {
@@ -30,6 +35,7 @@ function ordenarAlunos(a: any, b: any) {
 export default function GerenciamentoPage() {
   const [alunos, setAlunos] = useState<any[]>([]);
   const [pesquisa, setPesquisa] = useState("");
+  const [dataDownload, setDataDownload] = useState("");
 
   useEffect(() => {
     async function buscarTodosAlunos() {
@@ -85,6 +91,79 @@ export default function GerenciamentoPage() {
     setPesquisa("");
   }
 
+  function baixarAlunosPorData() {
+    if (!dataDownload) {
+      alert("Selecione uma data de cadastro.");
+      return;
+    }
+
+    const dataBR = isoParaBR(dataDownload);
+
+    const alunosDaData = alunos
+      .filter((a) => String(a["Data Cadastro"] || "") === dataBR)
+      .sort(ordenarAlunos);
+
+    if (alunosDaData.length === 0) {
+      alert("Nenhum aluno encontrado nessa data.");
+      return;
+    }
+
+    const colunas = [
+      "STATUS",
+      "Data Cadastro",
+      "ID",
+      "Aluno",
+      "Cidade",
+      "Tel. Resp",
+      "Tel. Aluno",
+      "Curso",
+    ];
+
+    const linhas = alunosDaData.map((a) =>
+      colunas.map((coluna) => String(a[coluna] || ""))
+    );
+
+    const ws = XLSX.utils.aoa_to_sheet([colunas, ...linhas]);
+
+    ws["!cols"] = [
+      { wch: 14 },
+      { wch: 16 },
+      { wch: 14 },
+      { wch: 38 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 45 },
+    ];
+
+    alunosDaData.forEach((aluno, index) => {
+      const curso = String(aluno["Curso"] || "").toUpperCase();
+
+      if (curso.includes("TECNOLOGIA")) {
+        const linhaExcel = index + 2;
+
+        colunas.forEach((_, colIndex) => {
+          const letra = XLSX.utils.encode_col(colIndex);
+          const celula = `${letra}${linhaExcel}`;
+
+          if (ws[celula]) {
+            ws[celula].s = {
+              font: {
+                color: { rgb: "FF0000" },
+                bold: true,
+              },
+            };
+          }
+        });
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Alunos");
+
+    XLSX.writeFile(wb, `ALUNOS_${dataBR.replaceAll("/", "-")}.xlsx`);
+  }
+
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
       <div className="fixed left-0 top-0 z-50 flex h-[38px] w-full items-center justify-center gap-2 bg-[#edbe13]">
@@ -135,6 +214,32 @@ export default function GerenciamentoPage() {
             >
               LIMPAR
             </button>
+          </div>
+        </div>
+
+        <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
+          <div className="mb-2 text-xs font-black uppercase text-cyan-300">
+            Baixar alunos por Data Cadastro
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              type="date"
+              value={dataDownload}
+              onChange={(e) => setDataDownload(e.target.value)}
+              className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
+            />
+
+            <button
+              onClick={baixarAlunosPorData}
+              className="rounded-md bg-green-700 px-5 py-2 text-xs font-black text-white hover:bg-green-600"
+            >
+              📥 BAIXAR EXCEL
+            </button>
+
+            <span className="text-xs font-bold text-slate-400">
+              Cursos TECNOLOGIA serão destacados em vermelho.
+            </span>
           </div>
         </div>
 
