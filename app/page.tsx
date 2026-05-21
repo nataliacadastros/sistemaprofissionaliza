@@ -174,7 +174,7 @@ export default function GerenciamentoPage() {
             <a
               key={aluno["ID"]}
               href={`/aluno/${aluno["ID"]}`}
-              className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[11px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+              className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
             >
               <div className="flex items-center border-r border-[#12375f] p-3">
                 <span
