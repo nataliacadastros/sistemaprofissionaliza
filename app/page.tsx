@@ -198,7 +198,7 @@ export default function GerenciamentoPage() {
       </div>
 
       <section className="px-8 pt-14">
-        <div className="mb-5 flex items-center justify-between gap-5">
+        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-lg font-black text-white">
               ▣ LISTAGEM DE ALUNOS
@@ -209,7 +209,7 @@ export default function GerenciamentoPage() {
             </p>
           </div>
 
-          <div className="flex w-[720px] items-center gap-3">
+          <div className="flex w-full flex-col gap-3 lg:w-[720px] lg:flex-row">
             <input
               value={pesquisa}
               onChange={(e) => setPesquisa(e.target.value)}
@@ -257,7 +257,8 @@ export default function GerenciamentoPage() {
           </div>
         )}
 
-        <div className="overflow-hidden rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
+        <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
+          <div className="min-w-[1200px]">
           <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
             <div className="border-r border-[#12375f] p-3">Status</div>
             <div className="border-r border-[#12375f] p-3">Data cadastro</div>
@@ -268,6 +269,7 @@ export default function GerenciamentoPage() {
             <div className="border-r border-[#12375f] p-3">Tel. aluno</div>
             <div className="border-r border-[#12375f] p-3">Curso contratado</div>
             <div className="p-3 text-center">Ações</div>
+            </div>
           </div>
 
           {filtrados.map((aluno) => (
