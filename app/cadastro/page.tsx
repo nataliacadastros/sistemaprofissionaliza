@@ -40,7 +40,7 @@ export default function CadastroPage() {
     curso: "",
     pagamento: "",
     vendedor: "",
-    dataMatricula: "",
+    dataMatrícula: "",
   });
 
   const [checks, setChecks] = useState({
@@ -138,7 +138,7 @@ export default function CadastroPage() {
         Curso: form.curso.toUpperCase(),
         Pagamento: form.pagamento.toUpperCase(),
         Vendedor: form.vendedor.toUpperCase(),
-        "Data Matricula": form.dataMatricula,
+        "Data Matrícula": form.dataMatrícula,
       },
     ]);
 
@@ -195,7 +195,7 @@ export default function CadastroPage() {
       Curso: a.Curso,
       Pagamento: a.Pagamento,
       Vendedor: a.Vendedor,
-      "Data Matricula": a["Data Matricula"],
+      "Data Matrícula": a["Data Matrícula"],
     }));
 
     const { error } = await supabase.from("backup alunos").insert(dados);
@@ -216,7 +216,7 @@ export default function CadastroPage() {
       curso: "",
       pagamento: "",
       vendedor: "",
-      dataMatricula: "",
+      dataMatrícula: "",
     });
     setChecks({
       ingles: false,
@@ -270,7 +270,7 @@ export default function CadastroPage() {
 
           <Campo label="FORMA DE PAGAMENTO:" value={form.pagamento} onChange={(v: string) => atualizar("pagamento", v)} />
           <Campo label="VENDEDOR:" value={form.vendedor} onChange={(v: string) => atualizar("vendedor", v)} />
-          <Campo label="DATA DA MATRÍCULA:" value={form.dataMatricula} onChange={(v: string) => atualizar("dataMatricula", v)} />
+          <Campo label="DATA DA MATRÍCULA:" value={form.dataMatrícula} onChange={(v: string) => atualizar("dataMatrícula", v)} />
 
           <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-[230px_1fr] md:items-center md:gap-4">
             <div></div>
