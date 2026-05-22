@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx-js-style";
 
 function converterDataBR(data?: string) {
   if (!data) return 0;
   const partes = String(data).split("/");
   if (partes.length !== 3) return 0;
-
   const [dia, mes, ano] = partes;
   return new Date(`${ano}-${mes}-${dia}`).getTime();
 }
@@ -22,24 +22,42 @@ function isoParaBR(dataISO: string) {
 function ordenarAlunos(a: any, b: any) {
   const ordemA = Number(a["Ordem"] || 0);
   const ordemB = Number(b["Ordem"] || 0);
-
   if (ordemA !== ordemB) return ordemB - ordemA;
 
   const dataA = converterDataBR(a["Data Cadastro"]);
   const dataB = converterDataBR(b["Data Cadastro"]);
-
   if (dataA !== dataB) return dataB - dataA;
 
   return Number(b["ID"] || 0) - Number(a["ID"] || 0);
 }
 
 export default function GerenciamentoPage() {
+  const router = useRouter();
+  const [carregandoLogin, setCarregandoLogin] = useState(true);
+
   const [alunos, setAlunos] = useState<any[]>([]);
   const [pesquisa, setPesquisa] = useState("");
   const [mostrarDownload, setMostrarDownload] = useState(false);
   const [dataDownload, setDataDownload] = useState("");
 
   useEffect(() => {
+    async function verificarLogin() {
+      const { data } = await supabase.auth.getSession();
+
+      if (!data.session) {
+        router.push("/login");
+        return;
+      }
+
+      setCarregandoLogin(false);
+    }
+
+    verificarLogin();
+  }, [router]);
+
+  useEffect(() => {
+    if (carregandoLogin) return;
+
     async function buscarTodosAlunos() {
       let todos: any[] = [];
       let inicio = 0;
@@ -73,7 +91,7 @@ export default function GerenciamentoPage() {
     }
 
     buscarTodosAlunos();
-  }, []);
+  }, [carregandoLogin]);
 
   const filtrados = useMemo(() => {
     const termo = pesquisa.trim().toLowerCase();
@@ -89,6 +107,11 @@ export default function GerenciamentoPage() {
       .sort(ordenarAlunos);
   }, [alunos, pesquisa]);
 
+  async function sair() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
   function baixarAlunosPorData() {
     if (!dataDownload) {
       alert("Selecione uma data.");
@@ -98,9 +121,9 @@ export default function GerenciamentoPage() {
     const dataBR = isoParaBR(dataDownload);
 
     const alunosDaData = alunos
-  .filter((a) => String(a["Data Cadastro"] || "") === dataBR)
-  .sort(ordenarAlunos)
-  .reverse();
+      .filter((a) => String(a["Data Cadastro"] || "") === dataBR)
+      .sort(ordenarAlunos)
+      .reverse();
 
     if (alunosDaData.length === 0) {
       alert("Nenhum aluno encontrado nessa data.");
@@ -135,9 +158,9 @@ export default function GerenciamentoPage() {
       { wch: 50 },
     ];
 
-    // Cabeçalho
     colunas.forEach((_, colIndex) => {
       const celula = `${XLSX.utils.encode_col(colIndex)}1`;
+
       if (ws[celula]) {
         ws[celula].s = {
           font: { bold: true, color: { rgb: "FFFFFF" } },
@@ -147,7 +170,6 @@ export default function GerenciamentoPage() {
       }
     });
 
-    // Curso TECNOLOGIA em vermelho
     alunosDaData.forEach((aluno, index) => {
       const curso = String(aluno["Curso"] || "").toUpperCase();
 
@@ -173,9 +195,17 @@ export default function GerenciamentoPage() {
     XLSX.writeFile(wb, `ALUNOS_${dataBR.replaceAll("/", "-")}.xlsx`);
   }
 
+  if (carregandoLogin) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
+        <div className="font-black">VERIFICANDO LOGIN...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
-      <div className="fixed left-0 top-0 z-50 flex h-[38px] w-full items-center justify-center gap-2 bg-[#edbe13]">
+      <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
         {[
           ["📑 CADASTRO", "/cadastro"],
           ["🖥️ GERENCIAMENTO", "/gerenciamento"],
@@ -186,7 +216,7 @@ export default function GerenciamentoPage() {
           <a
             key={tab}
             href={href}
-            className={`rounded-md border px-5 py-1 text-xs font-bold ${
+            className={`shrink-0 rounded-md border px-5 py-2 text-xs font-bold md:py-1 ${
               tab.includes("GERENCIAMENTO")
                 ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_0_10px_rgba(0,242,255,.6)]"
                 : "border-slate-700/30 bg-white/20 text-[#1f295a]"
@@ -195,10 +225,17 @@ export default function GerenciamentoPage() {
             {tab}
           </a>
         ))}
+
+        <button
+          onClick={sair}
+          className="shrink-0 rounded-md border border-red-700 bg-red-600 px-5 py-2 text-xs font-black text-white md:py-1"
+        >
+          SAIR
+        </button>
       </div>
 
-      <section className="px-8 pt-14">
-        <div className="mb-5 flex items-center justify-between gap-5">
+      <section className="px-4 pt-20 md:px-8 md:pt-14">
+        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-lg font-black text-white">
               ▣ LISTAGEM DE ALUNOS
@@ -209,7 +246,7 @@ export default function GerenciamentoPage() {
             </p>
           </div>
 
-          <div className="flex w-[720px] items-center gap-3">
+          <div className="flex w-full flex-col gap-3 lg:w-[760px] lg:flex-row lg:items-center">
             <input
               value={pesquisa}
               onChange={(e) => setPesquisa(e.target.value)}
@@ -239,7 +276,7 @@ export default function GerenciamentoPage() {
               Selecione a Data Cadastro para baixar
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
                 type="date"
                 value={dataDownload}
@@ -257,72 +294,74 @@ export default function GerenciamentoPage() {
           </div>
         )}
 
-        <div className="overflow-hidden rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
-          <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
-            <div className="border-r border-[#12375f] p-3">Status</div>
-            <div className="border-r border-[#12375f] p-3">Data cadastro</div>
-            <div className="border-r border-[#12375f] p-3">ID do aluno</div>
-            <div className="border-r border-[#12375f] p-3">Nome completo</div>
-            <div className="border-r border-[#12375f] p-3">Cidade</div>
-            <div className="border-r border-[#12375f] p-3">Tel. responsável</div>
-            <div className="border-r border-[#12375f] p-3">Tel. aluno</div>
-            <div className="border-r border-[#12375f] p-3">Curso contratado</div>
-            <div className="p-3 text-center">Ações</div>
+        <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
+          <div className="min-w-[1200px]">
+            <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
+              <div className="border-r border-[#12375f] p-3">Status</div>
+              <div className="border-r border-[#12375f] p-3">Data cadastro</div>
+              <div className="border-r border-[#12375f] p-3">ID do aluno</div>
+              <div className="border-r border-[#12375f] p-3">Nome completo</div>
+              <div className="border-r border-[#12375f] p-3">Cidade</div>
+              <div className="border-r border-[#12375f] p-3">Tel. responsável</div>
+              <div className="border-r border-[#12375f] p-3">Tel. aluno</div>
+              <div className="border-r border-[#12375f] p-3">Curso contratado</div>
+              <div className="p-3 text-center">Ações</div>
+            </div>
+
+            {filtrados.map((aluno) => (
+              <a
+                key={aluno["ID"]}
+                href={`/aluno/${aluno["ID"]}`}
+                className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+              >
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  <span
+                    className={`rounded-md px-3 py-1 text-[10px] font-black ${
+                      aluno["STATUS"] === "CANCELADO"
+                        ? "bg-red-950 text-red-300"
+                        : "bg-green-950 text-green-300"
+                    }`}
+                  >
+                    {aluno["STATUS"] || "ATIVO"}
+                  </span>
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+                  {aluno["Data Cadastro"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["ID"]}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Aluno"]}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+                  {aluno["Cidade"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Tel. Resp"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Tel. Aluno"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Curso"] || "-"}
+                </div>
+
+                <div className="flex items-center justify-center p-3">
+                  <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
+                    ✎
+                  </span>
+                </div>
+              </a>
+            ))}
           </div>
-
-          {filtrados.map((aluno) => (
-            <a
-              key={aluno["ID"]}
-              href={`/aluno/${aluno["ID"]}`}
-              className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
-            >
-              <div className="flex items-center border-r border-[#12375f] p-3">
-                <span
-                  className={`rounded-md px-3 py-1 text-[10px] font-black ${
-                    aluno["STATUS"] === "CANCELADO"
-                      ? "bg-red-950 text-red-300"
-                      : "bg-green-950 text-green-300"
-                  }`}
-                >
-                  {aluno["STATUS"] || "ATIVO"}
-                </span>
-              </div>
-
-              <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
-                {aluno["Data Cadastro"] || "-"}
-              </div>
-
-              <div className="flex items-center border-r border-[#12375f] p-3">
-                {aluno["ID"]}
-              </div>
-
-              <div className="flex items-center border-r border-[#12375f] p-3">
-                {aluno["Aluno"]}
-              </div>
-
-              <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
-                {aluno["Cidade"] || "-"}
-              </div>
-
-              <div className="flex items-center border-r border-[#12375f] p-3">
-                {aluno["Tel. Resp"] || "-"}
-              </div>
-
-              <div className="flex items-center border-r border-[#12375f] p-3">
-                {aluno["Tel. Aluno"] || "-"}
-              </div>
-
-              <div className="flex items-center border-r border-[#12375f] p-3">
-                {aluno["Curso"] || "-"}
-              </div>
-
-              <div className="flex items-center justify-center p-3">
-                <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
-                  ✎
-                </span>
-              </div>
-            </a>
-          ))}
         </div>
       </section>
     </main>
