@@ -39,6 +39,7 @@ export default function GerenciamentoPage() {
   const [pesquisa, setPesquisa] = useState("");
   const [mostrarDownload, setMostrarDownload] = useState(false);
   const [dataDownload, setDataDownload] = useState("");
+  const [mostrarExcluidos, setMostrarExcluidos] = useState(false);
 
   useEffect(() => {
     async function verificarLogin() {
@@ -98,6 +99,14 @@ export default function GerenciamentoPage() {
 
     return alunos
       .filter((a) => {
+        const excluido = a["Excluido"] === true;
+
+        if (mostrarExcluidos) {
+          if (!excluido) return false;
+        } else {
+          if (excluido) return false;
+        }
+
         if (!termo) return true;
 
         return Object.values(a).some((valor) =>
@@ -105,7 +114,7 @@ export default function GerenciamentoPage() {
         );
       })
       .sort(ordenarAlunos);
-  }, [alunos, pesquisa]);
+  }, [alunos, pesquisa, mostrarExcluidos]);
 
   async function sair() {
     await supabase.auth.signOut();
@@ -121,7 +130,7 @@ export default function GerenciamentoPage() {
     const dataBR = isoParaBR(dataDownload);
 
     const alunosDaData = alunos
-      .filter((a) => String(a["Data Cadastro"] || "") === dataBR)
+      .filter((a) => String(a["Data Cadastro"] || "") === dataBR && a["Excluido"] !== true)
       .sort(ordenarAlunos)
       .reverse();
 
@@ -238,7 +247,7 @@ export default function GerenciamentoPage() {
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-lg font-black text-white">
-              ▣ LISTAGEM DE ALUNOS
+              {mostrarExcluidos ? "♻ ALUNOS EXCLUÍDOS" : "▣ LISTAGEM DE ALUNOS"}
             </h1>
 
             <p className="text-xs text-cyan-300">
@@ -266,6 +275,20 @@ export default function GerenciamentoPage() {
               className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white hover:bg-green-600"
             >
               BAIXAR ALUNOS
+            </button>
+
+            <button
+              onClick={() => {
+                setMostrarExcluidos((prev) => !prev);
+                setPesquisa("");
+              }}
+              className={`rounded-md px-4 py-2 text-xs font-black ${
+                mostrarExcluidos
+                  ? "bg-cyan-400 text-black hover:bg-cyan-300"
+                  : "bg-red-700 text-white hover:bg-red-600"
+              }`}
+            >
+              {mostrarExcluidos ? "VER ALUNOS ATIVOS" : "VER EXCLUÍDOS"}
             </button>
           </div>
         </div>
@@ -317,12 +340,14 @@ export default function GerenciamentoPage() {
                 <div className="flex items-center border-r border-[#12375f] p-3">
                   <span
                     className={`rounded-md px-3 py-1 text-[10px] font-black ${
-                      aluno["STATUS"] === "CANCELADO"
+                      aluno["Excluido"] === true
                         ? "bg-red-950 text-red-300"
+                        : aluno["STATUS"] === "CANCELADO"
+                        ? "bg-yellow-950 text-yellow-300"
                         : "bg-green-950 text-green-300"
                     }`}
                   >
-                    {aluno["STATUS"] || "ATIVO"}
+                    {aluno["Excluido"] === true ? "EXCLUÍDO" : aluno["STATUS"] || "ATIVO"}
                   </span>
                 </div>
 
