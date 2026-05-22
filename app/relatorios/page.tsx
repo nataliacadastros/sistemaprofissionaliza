@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 const Plot: any = dynamic(
   async () => {
@@ -110,11 +111,36 @@ function tipoPagamento(txt: any) {
 }
 
 export default function Relatorios() {
+  const router = useRouter();
+  const [carregandoLogin, setCarregandoLogin] = useState(true);
+
   const [dados, setDados] = useState<any[]>([]);
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
 
   useEffect(() => {
+    async function verificarLogin() {
+      const { data } = await supabase.auth.getSession();
+
+      if (!data.session) {
+        router.push("/login");
+        return;
+      }
+
+      setCarregandoLogin(false);
+    }
+
+    verificarLogin();
+  }, [router]);
+
+  async function sair() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
+  useEffect(() => {
+    if (carregandoLogin) return;
+
     const hoje = new Date();
     const seteDias = new Date();
     seteDias.setDate(hoje.getDate() - 7);
@@ -144,7 +170,7 @@ export default function Relatorios() {
     }
 
     buscar();
-  }, []);
+  }, [carregandoLogin]);
 
   const filtrado = useMemo(() => {
     return dados.filter((a) => {
@@ -235,9 +261,17 @@ export default function Relatorios() {
     margin: { t: 50, b: 50, l: 40, r: 20 },
   };
 
+  if (carregandoLogin) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
+        <div className="font-black">VERIFICANDO LOGIN...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
-      <div className="fixed left-0 top-0 z-50 flex h-[38px] w-full items-center justify-center gap-2 bg-[#edbe13]">
+      <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
         {[
           ["📑 CADASTRO", "/cadastro"],
           ["🖥️ GERENCIAMENTO", "/gerenciamento"],
@@ -248,7 +282,7 @@ export default function Relatorios() {
           <a
             key={tab}
             href={href}
-            className={`rounded-md border px-5 py-1 text-xs font-bold ${
+            className={`shrink-0 rounded-md border px-5 py-2 text-xs font-bold md:py-1 ${
               tab.includes("RELATÓRIOS")
                 ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_0_10px_rgba(0,242,255,.6)]"
                 : "border-slate-700/30 bg-white/20 text-[#1f295a]"
@@ -257,9 +291,16 @@ export default function Relatorios() {
             {tab}
           </a>
         ))}
+
+        <button
+          onClick={sair}
+          className="shrink-0 rounded-md border border-red-700 bg-red-600 px-5 py-2 text-xs font-black text-white md:py-1"
+        >
+          SAIR
+        </button>
       </div>
 
-      <section className="px-8 pt-16">
+      <section className="px-4 pt-20 md:px-8 md:pt-16">
         <h1 className="mb-5 text-xl font-black text-white">
           📊 Como os contratos chegaram para nós neste período
         </h1>
@@ -269,7 +310,7 @@ export default function Relatorios() {
             Filtrar Período — Data de Matrícula
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
             <input
               type="date"
               value={inicio}
@@ -285,7 +326,7 @@ export default function Relatorios() {
           </div>
         </div>
 
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
           <Card cor="pink" title="MATRÍCULAS" value={filtrado.length} />
           <Card cor="green" title="ATIVOS" value={ativos} />
           <Card cor="red" title="CANCELADOS" value={cancelados} />
@@ -352,7 +393,7 @@ export default function Relatorios() {
           />
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-6">
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
             <h2 className="mb-2 text-center text-sm font-black text-cyan-300">
               📍 CIDADES E VENDEDORES
