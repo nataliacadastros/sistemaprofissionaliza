@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 const cursos: Record<string, string> = {
   "00": "COLÉGIO COMBO",
@@ -29,6 +30,9 @@ function hojeBR() {
 }
 
 export default function CadastroPage() {
+  const router = useRouter();
+  const [carregandoLogin, setCarregandoLogin] = useState(true);
+
   const [lista, setLista] = useState<any[]>([]);
   const [form, setForm] = useState({
     id: "",
@@ -48,6 +52,26 @@ export default function CadastroPage() {
     bonus: false,
     confirmacao: false,
   });
+
+  useEffect(() => {
+    async function verificarLogin() {
+      const { data } = await supabase.auth.getSession();
+
+      if (!data.session) {
+        router.push("/login");
+        return;
+      }
+
+      setCarregandoLogin(false);
+    }
+
+    verificarLogin();
+  }, [router]);
+
+  async function sair() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   function limparTextosCheckbox(pagamento: string) {
     return pagamento
@@ -227,6 +251,14 @@ export default function CadastroPage() {
     alert("Enviado com sucesso!");
   }
 
+  if (carregandoLogin) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
+        <div className="font-black">VERIFICANDO LOGIN...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
       <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
@@ -249,6 +281,13 @@ export default function CadastroPage() {
             {tab}
           </a>
         ))}
+
+        <button
+          onClick={sair}
+          className="shrink-0 rounded-md border border-red-700 bg-red-600 px-5 py-2 text-xs font-black text-white md:py-1"
+        >
+          SAIR
+        </button>
       </div>
 
       <section className="mx-auto w-full max-w-6xl px-4 pt-20 md:px-8 md:pt-16">
