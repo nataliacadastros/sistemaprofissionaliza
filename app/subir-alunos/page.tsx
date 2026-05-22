@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 
 const cursosTags = [
@@ -45,6 +46,9 @@ function pegarCPF(a: any) {
 }
 
 export default function SubirAlunosPage() {
+  const router = useRouter();
+  const [carregandoLogin, setCarregandoLogin] = useState(true);
+
   const [modo, setModo] = useState("AUTOMÁTICO");
   const [dados, setDados] = useState<any[]>([]);
   const [dataFiltro, setDataFiltro] = useState("");
@@ -66,6 +70,23 @@ export default function SubirAlunosPage() {
   });
 
   useEffect(() => {
+    async function verificarLogin() {
+      const { data } = await supabase.auth.getSession();
+
+      if (!data.session) {
+        router.push("/login");
+        return;
+      }
+
+      setCarregandoLogin(false);
+    }
+
+    verificarLogin();
+  }, [router]);
+
+  useEffect(() => {
+    if (carregandoLogin) return;
+
     const salvo = localStorage.getItem("dados_tags_subir");
     if (salvo) {
       const obj = JSON.parse(salvo);
@@ -95,7 +116,7 @@ export default function SubirAlunosPage() {
     }
 
     buscar();
-  }, []);
+  }, [carregandoLogin]);
 
   function salvarTags(novo: any) {
     setDadosTags(novo);
@@ -321,13 +342,26 @@ export default function SubirAlunosPage() {
     });
   }
 
+  async function sair() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
+  if (carregandoLogin) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
+        <div className="font-black">VERIFICANDO LOGIN...</div>
+      </main>
+    );
+  }
+
   const pendentes = dfFinal?.filter((d) => d.payment === "PENDENTE") || [];
   const pronto = dfFinal && pendentes.length === 0;
   const cidadesDownload = Array.from(new Set((dfFinal || []).map((d) => d.city2)));
 
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
-      <div className="fixed left-0 top-0 z-50 flex h-[38px] w-full items-center justify-center gap-2 bg-[#edbe13]">
+      <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
         {[
           ["📑 CADASTRO", "/cadastro"],
           ["🖥️ GERENCIAMENTO", "/"],
@@ -338,7 +372,7 @@ export default function SubirAlunosPage() {
           <a
             key={tab}
             href={href}
-            className={`rounded-md border px-5 py-1 text-xs font-bold ${
+            className={`shrink-0 rounded-md border px-5 py-2 text-xs font-bold md:py-1 ${
               tab === "📤 SUBIR ALUNOS"
                 ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_0_10px_rgba(0,242,255,.6)]"
                 : "border-slate-700/30 bg-white/20 text-[#1f295a]"
@@ -347,9 +381,16 @@ export default function SubirAlunosPage() {
             {tab}
           </a>
         ))}
+
+        <button
+          onClick={sair}
+          className="shrink-0 rounded-md border border-red-700 bg-red-600 px-5 py-2 text-xs font-black text-white md:py-1"
+        >
+          SAIR
+        </button>
       </div>
 
-      <section className="px-8 pt-16">
+      <section className="px-4 pt-20 md:px-8 md:pt-16">
         <h1 className="mb-5 text-xl font-black text-white">📤 IMPORTAÇÃO EAD</h1>
 
         <div className="rounded-xl border border-[#12375f] bg-[#071b31] p-5 shadow-2xl">
