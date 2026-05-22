@@ -30,6 +30,8 @@ export default function AlunoPage() {
   const [aluno, setAluno] = useState<any>(null);
   const [original, setOriginal] = useState<any>(null);
   const [salvando, setSalvando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+  const [recuperando, setRecuperando] = useState(false);
 
   const [undo, setUndo] = useState<any[]>([]);
   const [redo, setRedo] = useState<any[]>([]);
@@ -169,6 +171,85 @@ export default function AlunoPage() {
     alert("Alterações salvas com sucesso!");
   }
 
+  async function excluirAluno() {
+    const confirmar = confirm(
+      "Tem certeza que deseja excluir este aluno do gerenciamento? Ele poderá ser recuperado depois."
+    );
+
+    if (!confirmar) return;
+
+    setExcluindo(true);
+
+    const { error } = await supabase
+      .from("backup alunos")
+      .update({
+        Excluido: true,
+        Excluido_em: new Date().toISOString(),
+      })
+      .eq("ID", alunoId);
+
+    if (!error) {
+      await supabase.from("historico_alteracoes").insert({
+        aluno_id: alunoId,
+        campo: "Exclusão",
+        valor_antigo: "Aluno ativo no gerenciamento",
+        valor_novo: "Aluno excluído do gerenciamento",
+      });
+    }
+
+    setExcluindo(false);
+
+    if (error) {
+      alert("Erro ao excluir aluno: " + error.message);
+      return;
+    }
+
+    alert("Aluno excluído do gerenciamento.");
+    router.push("/");
+  }
+
+  async function recuperarAluno() {
+    const confirmar = confirm("Deseja recuperar este aluno para o gerenciamento?");
+
+    if (!confirmar) return;
+
+    setRecuperando(true);
+
+    const { error } = await supabase
+      .from("backup alunos")
+      .update({
+        Excluido: false,
+        Excluido_em: null,
+      })
+      .eq("ID", alunoId);
+
+    if (!error) {
+      await supabase.from("historico_alteracoes").insert({
+        aluno_id: alunoId,
+        campo: "Recuperação",
+        valor_antigo: "Aluno excluído do gerenciamento",
+        valor_novo: "Aluno ativo no gerenciamento",
+      });
+    }
+
+    setRecuperando(false);
+
+    if (error) {
+      alert("Erro ao recuperar aluno: " + error.message);
+      return;
+    }
+
+    setAluno((prev: any) => ({
+      ...prev,
+      Excluido: false,
+      Excluido_em: null,
+    }));
+
+    await carregarAlteracoes();
+
+    alert("Aluno recuperado com sucesso!");
+  }
+
   async function salvarObservacao() {
     if (!novaObs.trim()) return;
 
@@ -223,7 +304,7 @@ export default function AlunoPage() {
 
           <button
             onClick={salvar}
-            disabled={salvando}
+            disabled={salvando || aluno.Excluido}
             className="rounded-md bg-cyan-400 px-6 py-2 text-xs font-black text-black disabled:opacity-60"
           >
             {salvando ? "SALVANDO..." : "💾 SALVAR ALTERAÇÕES"}
@@ -231,15 +312,48 @@ export default function AlunoPage() {
         </div>
       </div>
 
+      {aluno.Excluido && (
+        <div className="mb-5 rounded-xl border border-red-800 bg-red-950/40 p-4">
+          <div className="text-sm font-black text-red-300">
+            Este aluno está excluído do gerenciamento.
+          </div>
+          <div className="mt-1 text-xs text-slate-300">
+            Ele não deve aparecer na listagem principal, mas pode ser recuperado.
+          </div>
+
+          <button
+            onClick={recuperarAluno}
+            disabled={recuperando}
+            className="mt-3 rounded-md bg-emerald-600 px-5 py-2 text-xs font-black text-white disabled:opacity-60"
+          >
+            {recuperando ? "RECUPERANDO..." : "♻ RECUPERAR ALUNO"}
+          </button>
+        </div>
+      )}
+
       <section className="rounded-2xl border border-[#1e3354] bg-[#0f1b2d] p-6 shadow-2xl">
         <div className="mb-6 rounded-xl border border-[#21395c] bg-[#162842] p-5">
-          <h1 className="text-2xl font-black text-white">{aluno.Aluno}</h1>
-          <p className="mt-2 text-sm font-bold text-emerald-300">
-            {aluno.Curso || "SEM CURSO INFORMADO"}
-          </p>
-          <p className="mt-1 text-xs font-bold text-slate-400">
-            ID: {aluno.ID} • Cidade: {aluno.Cidade || "-"}
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-black text-white">{aluno.Aluno}</h1>
+              <p className="mt-2 text-sm font-bold text-emerald-300">
+                {aluno.Curso || "SEM CURSO INFORMADO"}
+              </p>
+              <p className="mt-1 text-xs font-bold text-slate-400">
+                ID: {aluno.ID} • Cidade: {aluno.Cidade || "-"}
+              </p>
+            </div>
+
+            {!aluno.Excluido && (
+              <button
+                onClick={excluirAluno}
+                disabled={excluindo}
+                className="rounded-md bg-red-700 px-5 py-2 text-xs font-black text-white disabled:opacity-60"
+              >
+                {excluindo ? "EXCLUINDO..." : "🗑 EXCLUIR ALUNO"}
+              </button>
+            )}
+          </div>
         </div>
 
         <h3 className="mb-3 text-xs font-black uppercase text-slate-300">
@@ -252,6 +366,7 @@ export default function AlunoPage() {
               key={campo}
               label={label}
               value={aluno[campo]}
+              disabled={aluno.Excluido}
               onChange={(v: string) => alterar(campo, v)}
               onFocus={() => iniciarEdicao(campo)}
               onBlur={() => finalizarEdicao(campo, label)}
@@ -267,12 +382,14 @@ export default function AlunoPage() {
           value={novaObs}
           onChange={(e) => setNovaObs(e.target.value)}
           rows={4}
-          className="w-full rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none"
+          disabled={aluno.Excluido}
+          className="w-full rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none disabled:opacity-60"
         />
 
         <button
           onClick={salvarObservacao}
-          className="mt-3 rounded-md bg-green-700 px-5 py-2 text-xs font-black text-white"
+          disabled={aluno.Excluido}
+          className="mt-3 rounded-md bg-green-700 px-5 py-2 text-xs font-black text-white disabled:opacity-60"
         >
           SALVAR OBSERVAÇÃO
         </button>
@@ -322,7 +439,7 @@ export default function AlunoPage() {
   );
 }
 
-function Campo({ label, value, onChange, onFocus, onBlur }: any) {
+function Campo({ label, value, onChange, onFocus, onBlur, disabled }: any) {
   return (
     <label className="block">
       <span className="mb-1 block text-[11px] font-black uppercase text-cyan-300">
@@ -330,10 +447,11 @@ function Campo({ label, value, onChange, onFocus, onBlur }: any) {
       </span>
       <input
         value={value || ""}
+        disabled={disabled}
         onFocus={onFocus}
         onBlur={onBlur}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-xs font-bold text-black outline-none"
+        className="w-full rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-xs font-bold text-black outline-none disabled:opacity-60"
       />
     </label>
   );
