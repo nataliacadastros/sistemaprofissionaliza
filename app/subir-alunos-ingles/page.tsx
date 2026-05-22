@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 function hojeISO() {
   return new Date().toISOString().slice(0, 10);
@@ -70,11 +71,36 @@ function baixarCSV(nomeArquivo: string, linhas: any[]) {
 }
 
 export default function SubirAlunosInglesPage() {
+  const router = useRouter();
+  const [carregandoLogin, setCarregandoLogin] = useState(true);
+
   const [dados, setDados] = useState<any[]>([]);
   const [turmaIngles, setTurmaIngles] = useState("");
   const [dataFiltro, setDataFiltro] = useState(hojeISO());
 
   useEffect(() => {
+    async function verificarLogin() {
+      const { data } = await supabase.auth.getSession();
+
+      if (!data.session) {
+        router.push("/login");
+        return;
+      }
+
+      setCarregandoLogin(false);
+    }
+
+    verificarLogin();
+  }, [router]);
+
+  async function sair() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
+  useEffect(() => {
+    if (carregandoLogin) return;
+
     const turmaSalva = localStorage.getItem("turma_ingles_importacao");
     if (turmaSalva) setTurmaIngles(turmaSalva);
 
@@ -102,7 +128,7 @@ export default function SubirAlunosInglesPage() {
     }
 
     buscar();
-  }, []);
+  }, [carregandoLogin]);
 
   function alterarTurma(valor: string) {
     const final = valor.toUpperCase();
@@ -149,9 +175,17 @@ export default function SubirAlunosInglesPage() {
     });
   }, [alunosIngles, turmaIngles]);
 
+  if (carregandoLogin) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
+        <div className="font-black">VERIFICANDO LOGIN...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
-      <div className="fixed left-0 top-0 z-50 flex h-[38px] w-full items-center justify-center gap-2 bg-[#edbe13]">
+      <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
         {[
           ["📑 CADASTRO", "/cadastro"],
           ["🖥️ GERENCIAMENTO", "/"],
@@ -162,7 +196,7 @@ export default function SubirAlunosInglesPage() {
           <a
             key={tab}
             href={href}
-            className={`rounded-md border px-5 py-1 text-xs font-bold ${
+            className={`shrink-0 rounded-md border px-5 py-2 text-xs font-bold md:py-1 ${
               tab.includes("INGLÊS")
                 ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_0_10px_rgba(0,242,255,.6)]"
                 : "border-slate-700/30 bg-white/20 text-[#1f295a]"
@@ -171,9 +205,16 @@ export default function SubirAlunosInglesPage() {
             {tab}
           </a>
         ))}
+
+        <button
+          onClick={sair}
+          className="shrink-0 rounded-md border border-red-700 bg-red-600 px-5 py-2 text-xs font-black text-white md:py-1"
+        >
+          SAIR
+        </button>
       </div>
 
-      <section className="px-8 pt-16">
+      <section className="px-4 pt-20 md:px-8 md:pt-16">
         <h1 className="mb-5 text-xl font-black text-white">
           🇬🇧 SUBIR ALUNOS DE INGLÊS
         </h1>
@@ -257,8 +298,8 @@ function Campo({
   type = "text",
 }: any) {
   return (
-    <div className="mb-3 grid grid-cols-[230px_1fr] items-center gap-4">
-      <label className="text-right text-sm font-black text-cyan-300">
+    <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-[230px_1fr] md:items-center md:gap-4">
+      <label className="text-left text-sm font-black text-cyan-300 md:text-right">
         {label}
       </label>
 
@@ -267,7 +308,7 @@ function Campo({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none"
+        className="w-full rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none"
       />
     </div>
   );
