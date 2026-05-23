@@ -19,37 +19,15 @@ function isoParaBR(dataISO: string) {
   return `${dia}/${mes}/${ano}`;
 }
 
-function limparValor(valor: any) {
-  if (valor === null || valor === undefined) return "";
-  if (String(valor).toLowerCase() === "null") return "";
-  return String(valor);
-}
-
 function limparTelefone(valor: any) {
-  return limparValor(valor).replace(/\D/g, "");
-}
-
-function montarNomeArquivo(datas: string[], cidades: string[]) {
-  const datasBR = datas.map((d) =>
-    isoParaBR(d).replaceAll("/", "-")
-  );
-
-  const parteData =
-    datasBR.length === 1 ? datasBR[0] : datasBR.join("_");
-
-  const parteCidade =
-    cidades.length === 0
-      ? "TODAS_AS_CIDADES"
-      : cidades.join("_");
-
-  return `Contatos dia ${parteData} ${parteCidade}.csv`;
+  return String(valor || "").replace(/\D/g, "");
 }
 
 function baixarCSV(nomeArquivo: string, linhas: string[][]) {
   const cabecalho = ["Nome", ",", "Telefone"];
 
   const conteudo = [cabecalho, ...linhas]
-    .map((linha) => linha.join(";")) // 🔥 padrão correto
+    .map((linha) => linha.join(";"))
     .join("\r\n");
 
   const blob = new Blob([conteudo], {
@@ -66,14 +44,10 @@ function baixarCSV(nomeArquivo: string, linhas: string[][]) {
   URL.revokeObjectURL(url);
 }
 
-function ordenar(a: any, b: any) {
-  return Number(a["ID"] || 0) - Number(b["ID"] || 0);
-}
-
 export default function CriarContatosPage() {
   const router = useRouter();
 
-  const [carregando, setCarregando] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [dados, setDados] = useState<any[]>([]);
   const [dataAtual, setDataAtual] = useState("");
   const [datas, setDatas] = useState<string[]>([]);
@@ -82,6 +56,7 @@ export default function CriarContatosPage() {
   useEffect(() => {
     async function init() {
       const { data } = await supabase.auth.getSession();
+
       if (!data.session) {
         router.push("/login");
         return;
@@ -104,14 +79,8 @@ export default function CriarContatosPage() {
         inicio += 1000;
       }
 
-      setDados(
-        todos.filter(
-          (a) =>
-            a["ID"] && a["Aluno"] && a["Excluido"] !== true
-        )
-      );
-
-      setCarregando(false);
+      setDados(todos.filter((a) => a["Excluido"] !== true));
+      setLoading(false);
     }
 
     init();
@@ -141,11 +110,7 @@ export default function CriarContatosPage() {
 
   const cidades = useMemo(() => {
     return Array.from(
-      new Set(
-        filtrados
-          .map((a) => limparValor(a["Cidade"]))
-          .filter(Boolean)
-      )
+      new Set(filtrados.map((a) => a["Cidade"]).filter(Boolean))
     );
   }, [filtrados]);
 
@@ -158,7 +123,7 @@ export default function CriarContatosPage() {
       );
     }
 
-    return lista.sort(ordenar);
+    return lista;
   }, [filtrados, cidadesSel]);
 
   const linhas = useMemo(() => {
@@ -178,71 +143,107 @@ export default function CriarContatosPage() {
   }, [preview]);
 
   function baixar() {
-    if (linhas.length === 0) return;
-    baixarCSV(montarNomeArquivo(datas, cidadesSel), linhas);
+    if (!linhas.length) return;
+
+    baixarCSV("contatos.csv", linhas);
   }
 
-  if (carregando) return <div>Carregando...</div>;
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
+        VERIFICANDO LOGIN...
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
 
-      {/* MENU */}
-      <div className="fixed top-0 w-full bg-[#edbe13] flex gap-2 p-2 z-50">
-        <a href="/cadastro">CADASTRO</a>
-        <a href="/gerenciamento">GERENCIAMENTO</a>
-        <a href="/relatorios">RELATÓRIOS</a>
-        <a href="/subir-alunos">SUBIR</a>
-        <a href="/subir-alunos-ingles">INGLÊS</a>
-        <a href="/criar-contatos">CONTATOS</a>
+      {/* MENU PADRÃO */}
+      <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
+        {[
+          ["📑 CADASTRO", "/cadastro"],
+          ["🖥️ GERENCIAMENTO", "/gerenciamento"],
+          ["📊 RELATÓRIOS", "/relatorios"],
+          ["📤 SUBIR ALUNOS", "/subir-alunos"],
+          ["📤 SUBIR ALUNOS DE INGLÊS", "/subir-alunos-ingles"],
+          ["📇 CRIAR CONTATOS", "/criar-contatos"],
+        ].map(([tab, href]) => (
+          <a
+            key={tab}
+            href={href}
+            className={`shrink-0 rounded-md border px-5 py-2 text-xs font-bold ${
+              tab.includes("CRIAR CONTATOS")
+                ? "border-cyan-300 bg-cyan-300 text-black"
+                : "bg-white/20 text-[#1f295a]"
+            }`}
+          >
+            {tab}
+          </a>
+        ))}
 
-        <button onClick={sair}>SAIR</button>
+        <button
+          onClick={sair}
+          className="rounded-md bg-red-600 px-4 py-2 text-white"
+        >
+          SAIR
+        </button>
       </div>
 
-      <section className="pt-20 p-4">
+      {/* CONTEÚDO */}
+      <section className="px-6 pt-24">
 
-        <h1>CRIAR CONTATOS</h1>
+        <h1 className="text-xl font-black mb-4">CRIAR CONTATOS</h1>
 
-        <input
-          type="date"
-          value={dataAtual}
-          onChange={(e) => setDataAtual(e.target.value)}
-        />
+        <div className="bg-[#071b31] p-5 rounded-xl border border-[#12375f]">
 
-        <button onClick={addData}>Adicionar</button>
+          <input
+            type="date"
+            value={dataAtual}
+            onChange={(e) => setDataAtual(e.target.value)}
+            className="mb-3 px-3 py-2 text-black"
+          />
 
-        <div>
-          {datas.map((d) => (
-            <span key={d}>{isoParaBR(d)} </span>
-          ))}
-        </div>
+          <button
+            onClick={addData}
+            className="ml-2 bg-cyan-400 px-4 py-2 font-bold"
+          >
+            ADICIONAR DATA
+          </button>
 
-        <div>
-          {cidades.map((c) => (
-            <button
-              key={c}
-              onClick={() =>
-                setCidadesSel((prev) =>
-                  prev.includes(c)
-                    ? prev.filter((x) => x !== c)
-                    : [...prev, c]
-                )
-              }
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+          <div className="mt-3">
+            {datas.map((d) => (
+              <span key={d} className="mr-2">
+                {isoParaBR(d)}
+              </span>
+            ))}
+          </div>
 
-        <button onClick={baixar}>BAIXAR CSV</button>
+          <div className="mt-4">
+            {cidades.map((c) => (
+              <button
+                key={c}
+                onClick={() =>
+                  setCidadesSel((prev) =>
+                    prev.includes(c)
+                      ? prev.filter((x) => x !== c)
+                      : [...prev, c]
+                  )
+                }
+                className="mr-2 mb-2 border px-3 py-1"
+              >
+                {c}
+              </button>
+            ))}
+          </div>
 
-        <div>
-          <h3>Preview CSV</h3>
-          {linhas.map((l, i) => (
-            <div key={i}>
-              {l[0]} | {l[1]} | {l[2]}
-            </div>
-          ))}
+          <button
+            onClick={baixar}
+            className="mt-4 w-full bg-green-700 py-3 font-black"
+          >
+            BAIXAR CSV
+          </button>
+
         </div>
 
       </section>
