@@ -19,15 +19,6 @@ function isoParaBR(dataISO: string) {
   return `${dia}/${mes}/${ano}`;
 }
 
-function pegarDataMatricula(a: any) {
-  return (
-    a["Data Matrícula"] ||
-    a["Data Matricula"] ||
-    a["Data Matr�cula"] ||
-    ""
-  );
-}
-
 function ordenarAlunos(a: any, b: any) {
   const ordemA = Number(a["Ordem"] || 0);
   const ordemB = Number(b["Ordem"] || 0);
@@ -48,7 +39,6 @@ export default function GerenciamentoPage() {
   const [pesquisa, setPesquisa] = useState("");
   const [mostrarDownload, setMostrarDownload] = useState(false);
   const [dataDownload, setDataDownload] = useState("");
-  const [mostrarExcluidos, setMostrarExcluidos] = useState(false);
 
   useEffect(() => {
     async function verificarLogin() {
@@ -108,14 +98,6 @@ export default function GerenciamentoPage() {
 
     return alunos
       .filter((a) => {
-        const excluido = a["Excluido"] === true;
-
-        if (mostrarExcluidos) {
-          if (!excluido) return false;
-        } else {
-          if (excluido) return false;
-        }
-
         if (!termo) return true;
 
         return Object.values(a).some((valor) =>
@@ -123,7 +105,7 @@ export default function GerenciamentoPage() {
         );
       })
       .sort(ordenarAlunos);
-  }, [alunos, pesquisa, mostrarExcluidos]);
+  }, [alunos, pesquisa]);
 
   async function sair() {
     await supabase.auth.signOut();
@@ -139,7 +121,7 @@ export default function GerenciamentoPage() {
     const dataBR = isoParaBR(dataDownload);
 
     const alunosDaData = alunos
-      .filter((a) => String(a["Data Cadastro"] || "") === dataBR && a["Excluido"] !== true)
+      .filter((a) => String(a["Data Cadastro"] || "") === dataBR)
       .sort(ordenarAlunos)
       .reverse();
 
@@ -148,42 +130,57 @@ export default function GerenciamentoPage() {
       return;
     }
 
-    const colunas = [
+    const colunasPreferidas = [
+      "Ordem",
       "STATUS",
+      "SEC",
+      "TURMA",
+      "10 CURSOS?",
+      "INGLÊS?",
       "Data Cadastro",
       "ID",
       "Aluno",
-      "Cidade",
       "Tel. Resp",
       "Tel. Aluno",
+      "CPF",
+      "Cidade",
       "Curso",
       "Pagamento",
       "Vendedor",
+      "Data Matricula",
       "Data Matrícula",
+      "Excluido",
+      "Excluido_em",
+    ];
+
+    const todasColunasEncontradas = Array.from(
+      new Set(alunosDaData.flatMap((aluno) => Object.keys(aluno)))
+    );
+
+    const colunas = [
+      ...colunasPreferidas.filter((coluna) =>
+        todasColunasEncontradas.includes(coluna)
+      ),
+      ...todasColunasEncontradas.filter(
+        (coluna) => !colunasPreferidas.includes(coluna)
+      ),
     ];
 
     const linhas = alunosDaData.map((a) =>
-      colunas.map((coluna) => {
-        if (coluna === "Data Matrícula") return String(pegarDataMatricula(a) || "");
-        return String(a[coluna] || "");
-      })
+      colunas.map((coluna) => String(a[coluna] ?? ""))
     );
 
     const ws = XLSX.utils.aoa_to_sheet([colunas, ...linhas]);
 
-    ws["!cols"] = [
-      { wch: 14 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 38 },
-      { wch: 22 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 50 },
-      { wch: 45 },
-      { wch: 25 },
-      { wch: 18 },
-    ];
+    ws["!cols"] = colunas.map((coluna) => {
+      if (coluna === "Aluno") return { wch: 38 };
+      if (coluna === "Curso") return { wch: 50 };
+      if (coluna === "Pagamento") return { wch: 45 };
+      if (coluna === "Vendedor") return { wch: 25 };
+      if (coluna.includes("Data")) return { wch: 18 };
+      if (coluna.includes("Tel")) return { wch: 18 };
+      return { wch: 16 };
+    });
 
     colunas.forEach((_, colIndex) => {
       const celula = `${XLSX.utils.encode_col(colIndex)}1`;
@@ -265,7 +262,7 @@ export default function GerenciamentoPage() {
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-lg font-black text-white">
-              {mostrarExcluidos ? "♻ ALUNOS EXCLUÍDOS" : "▣ LISTAGEM DE ALUNOS"}
+              ▣ LISTAGEM DE ALUNOS
             </h1>
 
             <p className="text-xs text-cyan-300">
@@ -277,7 +274,7 @@ export default function GerenciamentoPage() {
             <input
               value={pesquisa}
               onChange={(e) => setPesquisa(e.target.value)}
-              placeholder="Pesquisar por nome, ID, cidade, telefone, curso, pagamento, vendedor, status..."
+              placeholder="Pesquisar por nome, ID, cidade, telefone, curso, status..."
               className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
             />
 
@@ -293,20 +290,6 @@ export default function GerenciamentoPage() {
               className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white hover:bg-green-600"
             >
               BAIXAR ALUNOS
-            </button>
-
-            <button
-              onClick={() => {
-                setMostrarExcluidos((prev) => !prev);
-                setPesquisa("");
-              }}
-              className={`rounded-md px-4 py-2 text-xs font-black ${
-                mostrarExcluidos
-                  ? "bg-cyan-400 text-black hover:bg-cyan-300"
-                  : "bg-red-700 text-white hover:bg-red-600"
-              }`}
-            >
-              {mostrarExcluidos ? "VER ALUNOS ATIVOS" : "VER EXCLUÍDOS"}
             </button>
           </div>
         </div>
@@ -336,8 +319,8 @@ export default function GerenciamentoPage() {
         )}
 
         <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
-          <div className="min-w-[1900px]">
-            <div className="grid grid-cols-[110px_120px_110px_2fr_1.4fr_1.3fr_1.3fr_2fr_2fr_1.4fr_140px_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
+          <div className="min-w-[1200px]">
+            <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
               <div className="border-r border-[#12375f] p-3">Status</div>
               <div className="border-r border-[#12375f] p-3">Data cadastro</div>
               <div className="border-r border-[#12375f] p-3">ID do aluno</div>
@@ -346,9 +329,6 @@ export default function GerenciamentoPage() {
               <div className="border-r border-[#12375f] p-3">Tel. responsável</div>
               <div className="border-r border-[#12375f] p-3">Tel. aluno</div>
               <div className="border-r border-[#12375f] p-3">Curso contratado</div>
-              <div className="border-r border-[#12375f] p-3">Forma de pagamento</div>
-              <div className="border-r border-[#12375f] p-3">Vendedor</div>
-              <div className="border-r border-[#12375f] p-3">Data matrícula</div>
               <div className="p-3 text-center">Ações</div>
             </div>
 
@@ -356,19 +336,17 @@ export default function GerenciamentoPage() {
               <a
                 key={aluno["ID"]}
                 href={`/aluno/${aluno["ID"]}`}
-                className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.4fr_1.3fr_1.3fr_2fr_2fr_1.4fr_140px_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+                className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
               >
                 <div className="flex items-center border-r border-[#12375f] p-3">
                   <span
                     className={`rounded-md px-3 py-1 text-[10px] font-black ${
-                      aluno["Excluido"] === true
+                      aluno["STATUS"] === "CANCELADO"
                         ? "bg-red-950 text-red-300"
-                        : aluno["STATUS"] === "CANCELADO"
-                        ? "bg-yellow-950 text-yellow-300"
                         : "bg-green-950 text-green-300"
                     }`}
                   >
-                    {aluno["Excluido"] === true ? "EXCLUÍDO" : aluno["STATUS"] || "ATIVO"}
+                    {aluno["STATUS"] || "ATIVO"}
                   </span>
                 </div>
 
@@ -398,18 +376,6 @@ export default function GerenciamentoPage() {
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
                   {aluno["Curso"] || "-"}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["Pagamento"] || "-"}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
-                  {aluno["Vendedor"] || "-"}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3">
-                  {pegarDataMatricula(aluno) || "-"}
                 </div>
 
                 <div className="flex items-center justify-center p-3">
