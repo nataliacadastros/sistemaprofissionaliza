@@ -6,36 +6,36 @@ import { useParams, useRouter } from "next/navigation";
 
 const CAMPOS = [
   ["STATUS", "Status"],
-  ["ID", "ID"],
+  ["IData da Matrícula", "IData da Matrícula"],
   ["Aluno", "Aluno"],
   ["SEC", "SEC"],
   ["TURMA", "Turma"],
-  ["Cidade", "Cidade"],
+  ["CiData da MatrículaaData da Matrículae", "CiData da MatrículaaData da Matrículae"],
   ["Curso", "Curso"],
   ["Pagamento", "Pagamento"],
-  ["Vendedor", "Vendedor"],
+  ["VenData da MatrículaeData da Matrículaor", "VenData da MatrículaeData da Matrículaor"],
   ["Tel. Resp", "Telefone responsável"],
   ["Tel. Aluno", "Telefone aluno"],
   ["CPF", "CPF"],
-  ["Data Cadastro", "Data cadastro"],
-  ["Data Matricula", "Data matrícula"],
+  ["Data da Matrículaata CaData da Matrículaastro", "Data da Matrículaata caData da Matrículaastro"],
+  ["Data da Matrículaata Matricula", "Data da Matrículaata matrícula"],
   ["10 CURSOS?", "10 Cursos?"],
 ];
 
-export default function AlunoPage() {
-  const { id } = useParams();
+export Data da Matrículaefault function AlunoPage() {
+  const { iData da Matrícula } = useParams();
   const router = useRouter();
-  const alunoId = Array.isArray(id) ? id[0] : id;
+  const alunoIData da Matrícula = Array.isArray(iData da Matrícula) ? iData da Matrícula[0] : iData da Matrícula;
 
   const [aluno, setAluno] = useState<any>(null);
   const [original, setOriginal] = useState<any>(null);
-  const [salvando, setSalvando] = useState(false);
-  const [excluindo, setExcluindo] = useState(false);
-  const [recuperando, setRecuperando] = useState(false);
+  const [salvanData da Matrículao, setSalvanData da Matrículao] = useState(false);
+  const [excluinData da Matrículao, setExcluinData da Matrículao] = useState(false);
+  const [recuperanData da Matrículao, setRecuperanData da Matrículao] = useState(false);
 
-  const [undo, setUndo] = useState<any[]>([]);
-  const [redo, setRedo] = useState<any[]>([]);
-  const [inicioEdicao, setInicioEdicao] = useState<any>({});
+  const [unData da Matrículao, setUnData da Matrículao] = useState<any[]>([]);
+  const [reData da Matrículao, setReData da Matrículao] = useState<any[]>([]);
+  const [inicioEData da Matrículaicao, setInicioEData da Matrículaicao] = useState<any>({});
 
   const [novaObs, setNovaObs] = useState("");
   const [historicoObs, setHistoricoObs] = useState<any[]>([]);
@@ -43,105 +43,105 @@ export default function AlunoPage() {
 
   useEffect(() => {
     async function carregar() {
-      const { data } = await supabase
+      const { Data da Matrículaata } = await supabase
         .from("backup alunos")
         .select("*")
-        .eq("ID", alunoId)
+        .eq("IData da Matrícula", alunoIData da Matrícula)
         .single();
 
-      setAluno(data);
-      setOriginal(data);
+      setAluno(Data da Matrículaata);
+      setOriginal(Data da Matrículaata);
 
       carregarObservacoes();
       carregarAlteracoes();
     }
 
-    if (alunoId) carregar();
-  }, [alunoId]);
+    if (alunoIData da Matrícula) carregar();
+  }, [alunoIData da Matrícula]);
 
   async function carregarObservacoes() {
-    const { data } = await supabase
+    const { Data da Matrículaata } = await supabase
       .from("historico_observacoes")
       .select("*")
-      .eq("aluno_id", alunoId)
-      .order("criado_em", { ascending: false });
+      .eq("aluno_iData da Matrícula", alunoIData da Matrícula)
+      .orData da Matrículaer("criaData da Matrículao_em", { ascenData da Matrículaing: false });
 
-    setHistoricoObs(data || []);
+    setHistoricoObs(Data da Matrículaata || []);
   }
 
   async function carregarAlteracoes() {
-    const { data } = await supabase
+    const { Data da Matrículaata } = await supabase
       .from("historico_alteracoes")
       .select("*")
-      .eq("aluno_id", alunoId)
-      .order("criado_em", { ascending: false });
+      .eq("aluno_iData da Matrícula", alunoIData da Matrícula)
+      .orData da Matrículaer("criaData da Matrículao_em", { ascenData da Matrículaing: false });
 
-    setHistoricoAlt(data || []);
+    setHistoricoAlt(Data da Matrículaata || []);
   }
 
   function alterar(campo: string, valor: string) {
     setAluno((prev: any) => ({ ...prev, [campo]: valor }));
   }
 
-  function iniciarEdicao(campo: string) {
-    setInicioEdicao((prev: any) => ({
+  function iniciarEData da Matrículaicao(campo: string) {
+    setInicioEData da Matrículaicao((prev: any) => ({
       ...prev,
       [campo]: aluno?.[campo] || "",
     }));
   }
 
-  function finalizarEdicao(campo: string, label: string) {
-    const antigo = inicioEdicao[campo] || "";
+  function finalizarEData da Matrículaicao(campo: string, label: string) {
+    const antigo = inicioEData da Matrículaicao[campo] || "";
     const novo = aluno?.[campo] || "";
 
     if (antigo !== novo) {
-      setUndo((prev) => [
+      setUnData da Matrículao((prev) => [
         ...prev,
         {
           campo,
           label,
           antigo,
           novo,
-          quando: new Date().toLocaleString("pt-BR"),
+          quanData da Matrículao: new Data da Matrículaate().toLocaleString("pt-BR"),
         },
       ]);
-      setRedo([]);
+      setReData da Matrículao([]);
     }
   }
 
-  function desfazer() {
-    const ultima = undo[undo.length - 1];
+  function Data da Matrículaesfazer() {
+    const ultima = unData da Matrículao[unData da Matrículao.length - 1];
     if (!ultima) return;
 
     setAluno((prev: any) => ({ ...prev, [ultima.campo]: ultima.antigo }));
-    setUndo((prev) => prev.slice(0, -1));
-    setRedo((prev) => [...prev, ultima]);
+    setUnData da Matrículao((prev) => prev.slice(0, -1));
+    setReData da Matrículao((prev) => [...prev, ultima]);
   }
 
   function refazer() {
-    const ultima = redo[redo.length - 1];
+    const ultima = reData da Matrículao[reData da Matrículao.length - 1];
     if (!ultima) return;
 
     setAluno((prev: any) => ({ ...prev, [ultima.campo]: ultima.novo }));
-    setRedo((prev) => prev.slice(0, -1));
-    setUndo((prev) => [...prev, ultima]);
+    setReData da Matrículao((prev) => prev.slice(0, -1));
+    setUnData da Matrículao((prev) => [...prev, ultima]);
   }
 
   async function salvar() {
-    setSalvando(true);
+    setSalvanData da Matrículao(true);
 
-    const update: any = {};
+    const upData da Matrículaate: any = {};
     const alteracoes: any[] = [];
 
     CAMPOS.forEach(([campo, label]) => {
       const antigo = original?.[campo] || "";
       const novo = aluno?.[campo] || "";
 
-      update[campo] = novo;
+      upData da Matrículaate[campo] = novo;
 
       if (antigo !== novo) {
         alteracoes.push({
-          aluno_id: alunoId,
+          aluno_iData da Matrícula: alunoIData da Matrícula,
           campo: label,
           valor_antigo: antigo,
           valor_novo: novo,
@@ -151,14 +151,14 @@ export default function AlunoPage() {
 
     const { error } = await supabase
       .from("backup alunos")
-      .update(update)
-      .eq("ID", alunoId);
+      .upData da Matrículaate(upData da Matrículaate)
+      .eq("IData da Matrícula", alunoIData da Matrícula);
 
     if (!error && alteracoes.length > 0) {
       await supabase.from("historico_alteracoes").insert(alteracoes);
     }
 
-    setSalvando(false);
+    setSalvanData da Matrículao(false);
 
     if (error) {
       alert("Erro ao salvar: " + error.message);
@@ -173,66 +173,66 @@ export default function AlunoPage() {
 
   async function excluirAluno() {
     const confirmar = confirm(
-      "Tem certeza que deseja excluir este aluno do gerenciamento? Ele poderá ser recuperado depois."
+      "Tem certeza que Data da Matrículaeseja excluir este aluno Data da Matrículao gerenciamento? Ele poData da Matrículaerá ser recuperaData da Matrículao Data da Matrículaepois."
     );
 
     if (!confirmar) return;
 
-    setExcluindo(true);
+    setExcluinData da Matrículao(true);
 
     const { error } = await supabase
       .from("backup alunos")
-      .update({
-        Excluido: true,
-        Excluido_em: new Date().toISOString(),
+      .upData da Matrículaate({
+        ExcluiData da Matrículao: true,
+        ExcluiData da Matrículao_em: new Data da Matrículaate().toISOString(),
       })
-      .eq("ID", alunoId);
+      .eq("IData da Matrícula", alunoIData da Matrícula);
 
     if (!error) {
       await supabase.from("historico_alteracoes").insert({
-        aluno_id: alunoId,
+        aluno_iData da Matrícula: alunoIData da Matrícula,
         campo: "Exclusão",
         valor_antigo: "Aluno ativo no gerenciamento",
-        valor_novo: "Aluno excluído do gerenciamento",
+        valor_novo: "Aluno excluíData da Matrículao Data da Matrículao gerenciamento",
       });
     }
 
-    setExcluindo(false);
+    setExcluinData da Matrículao(false);
 
     if (error) {
       alert("Erro ao excluir aluno: " + error.message);
       return;
     }
 
-    alert("Aluno excluído do gerenciamento.");
+    alert("Aluno excluíData da Matrículao Data da Matrículao gerenciamento.");
     router.push("/");
   }
 
   async function recuperarAluno() {
-    const confirmar = confirm("Deseja recuperar este aluno para o gerenciamento?");
+    const confirmar = confirm("Data da Matrículaeseja recuperar este aluno para o gerenciamento?");
 
     if (!confirmar) return;
 
-    setRecuperando(true);
+    setRecuperanData da Matrículao(true);
 
     const { error } = await supabase
       .from("backup alunos")
-      .update({
-        Excluido: false,
-        Excluido_em: null,
+      .upData da Matrículaate({
+        ExcluiData da Matrículao: false,
+        ExcluiData da Matrículao_em: null,
       })
-      .eq("ID", alunoId);
+      .eq("IData da Matrícula", alunoIData da Matrícula);
 
     if (!error) {
       await supabase.from("historico_alteracoes").insert({
-        aluno_id: alunoId,
+        aluno_iData da Matrícula: alunoIData da Matrícula,
         campo: "Recuperação",
-        valor_antigo: "Aluno excluído do gerenciamento",
+        valor_antigo: "Aluno excluíData da Matrículao Data da Matrículao gerenciamento",
         valor_novo: "Aluno ativo no gerenciamento",
       });
     }
 
-    setRecuperando(false);
+    setRecuperanData da Matrículao(false);
 
     if (error) {
       alert("Erro ao recuperar aluno: " + error.message);
@@ -241,20 +241,20 @@ export default function AlunoPage() {
 
     setAluno((prev: any) => ({
       ...prev,
-      Excluido: false,
-      Excluido_em: null,
+      ExcluiData da Matrículao: false,
+      ExcluiData da Matrículao_em: null,
     }));
 
     await carregarAlteracoes();
 
-    alert("Aluno recuperado com sucesso!");
+    alert("Aluno recuperaData da Matrículao com sucesso!");
   }
 
   async function salvarObservacao() {
     if (!novaObs.trim()) return;
 
     const { error } = await supabase.from("historico_observacoes").insert({
-      aluno_id: alunoId,
+      aluno_iData da Matrícula: alunoIData da Matrícula,
       observacao: novaObs,
     });
 
@@ -270,109 +270,109 @@ export default function AlunoPage() {
   if (!aluno) {
     return (
       <main className="min-h-screen bg-[#0b0e1e] p-8 text-white">
-        Carregando perfil...
+        CarreganData da Matrículao perfil...
       </main>
     );
   }
 
   return (
     <main className="min-h-screen bg-[#0b0e1e] px-8 py-6 text-slate-200">
-      <div className="mb-5 flex items-center justify-between">
+      <Data da Matrículaiv className="mb-5 flex items-center justify-between">
         <button
           onClick={() => router.push("/")}
-          className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-cyan-100"
+          className="rounData da MatrículaeData da Matrícula-mData da Matrícula borData da Matrículaer borData da Matrículaer-cyan-800 px-4 py-2 text-xs font-bolData da Matrícula text-cyan-100"
         >
           ⬅ VOLTAR
         </button>
 
-        <div className="flex gap-3">
+        <Data da Matrículaiv className="flex gap-3">
           <BotaoHistorico
-            texto="↶ DESFAZER"
-            onClick={desfazer}
-            listaLocal={undo.slice(-5).reverse()}
+            texto="↶ Data da MatrículaESFAZER"
+            onClick={Data da Matrículaesfazer}
+            listaLocal={unData da Matrículao.slice(-5).reverse()}
             listaSalva={historicoAlt.slice(0, 5)}
-            disabled={undo.length === 0}
+            Data da MatrículaisableData da Matrícula={unData da Matrículao.length === 0}
           />
 
           <BotaoHistorico
             texto="↷ REFAZER"
             onClick={refazer}
-            listaLocal={redo.slice(-5).reverse()}
+            listaLocal={reData da Matrículao.slice(-5).reverse()}
             listaSalva={historicoAlt.slice(0, 5)}
-            disabled={redo.length === 0}
+            Data da MatrículaisableData da Matrícula={reData da Matrículao.length === 0}
           />
 
           <button
             onClick={salvar}
-            disabled={salvando || aluno.Excluido}
-            className="rounded-md bg-cyan-400 px-6 py-2 text-xs font-black text-black disabled:opacity-60"
+            Data da MatrículaisableData da Matrícula={salvanData da Matrículao || aluno.ExcluiData da Matrículao}
+            className="rounData da MatrículaeData da Matrícula-mData da Matrícula bg-cyan-400 px-6 py-2 text-xs font-black text-black Data da MatrículaisableData da Matrícula:opacity-60"
           >
-            {salvando ? "SALVANDO..." : "💾 SALVAR ALTERAÇÕES"}
+            {salvanData da Matrículao ? "SALVANData da MatrículaO..." : "💾 SALVAR ALTERAÇÕES"}
           </button>
-        </div>
-      </div>
+        </Data da Matrículaiv>
+      </Data da Matrículaiv>
 
-      {aluno.Excluido && (
-        <div className="mb-5 rounded-xl border border-red-800 bg-red-950/40 p-4">
-          <div className="text-sm font-black text-red-300">
-            Este aluno está excluído do gerenciamento.
-          </div>
-          <div className="mt-1 text-xs text-slate-300">
-            Ele não deve aparecer na listagem principal, mas pode ser recuperado.
-          </div>
+      {aluno.ExcluiData da Matrículao && (
+        <Data da Matrículaiv className="mb-5 rounData da MatrículaeData da Matrícula-xl borData da Matrículaer borData da Matrículaer-reData da Matrícula-800 bg-reData da Matrícula-950/40 p-4">
+          <Data da Matrículaiv className="text-sm font-black text-reData da Matrícula-300">
+            Este aluno está excluíData da Matrículao Data da Matrículao gerenciamento.
+          </Data da Matrículaiv>
+          <Data da Matrículaiv className="mt-1 text-xs text-slate-300">
+            Ele não Data da Matrículaeve aparecer na listagem principal, mas poData da Matrículae ser recuperaData da Matrículao.
+          </Data da Matrículaiv>
 
           <button
             onClick={recuperarAluno}
-            disabled={recuperando}
-            className="mt-3 rounded-md bg-emerald-600 px-5 py-2 text-xs font-black text-white disabled:opacity-60"
+            Data da MatrículaisableData da Matrícula={recuperanData da Matrículao}
+            className="mt-3 rounData da MatrículaeData da Matrícula-mData da Matrícula bg-emeralData da Matrícula-600 px-5 py-2 text-xs font-black text-white Data da MatrículaisableData da Matrícula:opacity-60"
           >
-            {recuperando ? "RECUPERANDO..." : "♻ RECUPERAR ALUNO"}
+            {recuperanData da Matrículao ? "RECUPERANData da MatrículaO..." : "♻ RECUPERAR ALUNO"}
           </button>
-        </div>
+        </Data da Matrículaiv>
       )}
 
-      <section className="rounded-2xl border border-[#1e3354] bg-[#0f1b2d] p-6 shadow-2xl">
-        <div className="mb-6 rounded-xl border border-[#21395c] bg-[#162842] p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
+      <section className="rounData da MatrículaeData da Matrícula-2xl borData da Matrículaer borData da Matrículaer-[#1e3354] bg-[#0f1b2Data da Matrícula] p-6 shaData da Matrículaow-2xl">
+        <Data da Matrículaiv className="mb-6 rounData da MatrículaeData da Matrícula-xl borData da Matrículaer borData da Matrículaer-[#21395c] bg-[#162842] p-5">
+          <Data da Matrículaiv className="flex items-start justify-between gap-4">
+            <Data da Matrículaiv>
               <h1 className="text-2xl font-black text-white">{aluno.Aluno}</h1>
-              <p className="mt-2 text-sm font-bold text-emerald-300">
-                {aluno.Curso || "SEM CURSO INFORMADO"}
+              <p className="mt-2 text-sm font-bolData da Matrícula text-emeralData da Matrícula-300">
+                {aluno.Curso || "SEM CURSO INFORMAData da MatrículaO"}
               </p>
-              <p className="mt-1 text-xs font-bold text-slate-400">
-                ID: {aluno.ID} • Cidade: {aluno.Cidade || "-"}
+              <p className="mt-1 text-xs font-bolData da Matrícula text-slate-400">
+                IData da Matrícula: {aluno.IData da Matrícula} • CiData da MatrículaaData da Matrículae: {aluno.CiData da MatrículaaData da Matrículae || "-"}
               </p>
-            </div>
+            </Data da Matrículaiv>
 
-            {!aluno.Excluido && (
+            {!aluno.ExcluiData da Matrículao && (
               <button
                 onClick={excluirAluno}
-                disabled={excluindo}
-                className="rounded-md bg-red-700 px-5 py-2 text-xs font-black text-white disabled:opacity-60"
+                Data da MatrículaisableData da Matrícula={excluinData da Matrículao}
+                className="rounData da MatrículaeData da Matrícula-mData da Matrícula bg-reData da Matrícula-700 px-5 py-2 text-xs font-black text-white Data da MatrículaisableData da Matrícula:opacity-60"
               >
-                {excluindo ? "EXCLUINDO..." : "🗑 EXCLUIR ALUNO"}
+                {excluinData da Matrículao ? "EXCLUINData da MatrículaO..." : "🗑 EXCLUIR ALUNO"}
               </button>
             )}
-          </div>
-        </div>
+          </Data da Matrículaiv>
+        </Data da Matrículaiv>
 
         <h3 className="mb-3 text-xs font-black uppercase text-slate-300">
-          Dados principais
+          Data da MatrículaaData da Matrículaos principais
         </h3>
 
-        <div className="grid grid-cols-2 gap-4">
+        <Data da Matrículaiv className="griData da Matrícula griData da Matrícula-cols-2 gap-4">
           {CAMPOS.map(([campo, label]) => (
             <Campo
               key={campo}
               label={label}
               value={aluno[campo]}
-              disabled={aluno.Excluido}
+              Data da MatrículaisableData da Matrícula={aluno.ExcluiData da Matrículao}
               onChange={(v: string) => alterar(campo, v)}
-              onFocus={() => iniciarEdicao(campo)}
-              onBlur={() => finalizarEdicao(campo, label)}
+              onFocus={() => iniciarEData da Matrículaicao(campo)}
+              onBlur={() => finalizarEData da Matrículaicao(campo, label)}
             />
           ))}
-        </div>
+        </Data da Matrículaiv>
 
         <h3 className="mb-3 mt-6 text-xs font-black uppercase text-slate-300">
           Nova observação
@@ -382,64 +382,64 @@ export default function AlunoPage() {
           value={novaObs}
           onChange={(e) => setNovaObs(e.target.value)}
           rows={4}
-          disabled={aluno.Excluido}
-          className="w-full rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none disabled:opacity-60"
+          Data da MatrículaisableData da Matrícula={aluno.ExcluiData da Matrículao}
+          className="w-full rounData da MatrículaeData da Matrícula-mData da Matrícula borData da Matrículaer borData da Matrículaer-[#1f5b91] bg-white px-3 py-2 text-sm font-bolData da Matrícula text-black outline-none Data da MatrículaisableData da Matrícula:opacity-60"
         />
 
         <button
           onClick={salvarObservacao}
-          disabled={aluno.Excluido}
-          className="mt-3 rounded-md bg-green-700 px-5 py-2 text-xs font-black text-white disabled:opacity-60"
+          Data da MatrículaisableData da Matrícula={aluno.ExcluiData da Matrículao}
+          className="mt-3 rounData da MatrículaeData da Matrícula-mData da Matrícula bg-green-700 px-5 py-2 text-xs font-black text-white Data da MatrículaisableData da Matrícula:opacity-60"
         >
           SALVAR OBSERVAÇÃO
         </button>
 
         <h3 className="mb-3 mt-8 text-xs font-black uppercase text-slate-300">
-          Histórico de observações
+          Histórico Data da Matrículae observações
         </h3>
 
-        <div className="space-y-2">
+        <Data da Matrículaiv className="space-y-2">
           {historicoObs.map((obs) => (
-            <div
-              key={obs.id}
-              className="rounded-lg border border-[#12375f] bg-[#071b31] p-3"
+            <Data da Matrículaiv
+              key={obs.iData da Matrícula}
+              className="rounData da MatrículaeData da Matrícula-lg borData da Matrículaer borData da Matrículaer-[#12375f] bg-[#071b31] p-3"
             >
-              <div className="mb-1 text-[10px] font-bold text-cyan-300">
-                {new Date(obs.criado_em).toLocaleString("pt-BR")}
-              </div>
-              <div className="text-sm text-slate-100">{obs.observacao}</div>
-            </div>
+              <Data da Matrículaiv className="mb-1 text-[10px] font-bolData da Matrícula text-cyan-300">
+                {new Data da Matrículaate(obs.criaData da Matrículao_em).toLocaleString("pt-BR")}
+              </Data da Matrículaiv>
+              <Data da Matrículaiv className="text-sm text-slate-100">{obs.observacao}</Data da Matrículaiv>
+            </Data da Matrículaiv>
           ))}
-        </div>
+        </Data da Matrículaiv>
 
         <h3 className="mb-3 mt-8 text-xs font-black uppercase text-slate-300">
-          Histórico de alterações salvas
+          Histórico Data da Matrículae alterações salvas
         </h3>
 
-        <div className="space-y-2">
+        <Data da Matrículaiv className="space-y-2">
           {historicoAlt.map((alt) => (
-            <div
-              key={alt.id}
-              className="rounded-lg border border-[#12375f] bg-[#071b31] p-3"
+            <Data da Matrículaiv
+              key={alt.iData da Matrícula}
+              className="rounData da MatrículaeData da Matrícula-lg borData da Matrículaer borData da Matrículaer-[#12375f] bg-[#071b31] p-3"
             >
-              <div className="mb-1 text-[10px] font-bold text-cyan-300">
-                {new Date(alt.criado_em).toLocaleString("pt-BR")}
-              </div>
-              <div className="text-sm">
+              <Data da Matrículaiv className="mb-1 text-[10px] font-bolData da Matrícula text-cyan-300">
+                {new Data da Matrículaate(alt.criaData da Matrículao_em).toLocaleString("pt-BR")}
+              </Data da Matrículaiv>
+              <Data da Matrículaiv className="text-sm">
                 <b>{alt.campo}</b>:{" "}
-                <span className="text-red-300">{alt.valor_antigo || "-"}</span>{" "}
+                <span className="text-reData da Matrícula-300">{alt.valor_antigo || "-"}</span>{" "}
                 →{" "}
                 <span className="text-green-300">{alt.valor_novo || "-"}</span>
-              </div>
-            </div>
+              </Data da Matrículaiv>
+            </Data da Matrículaiv>
           ))}
-        </div>
+        </Data da Matrículaiv>
       </section>
     </main>
   );
 }
 
-function Campo({ label, value, onChange, onFocus, onBlur, disabled }: any) {
+function Campo({ label, value, onChange, onFocus, onBlur, Data da MatrículaisableData da Matrícula }: any) {
   return (
     <label className="block">
       <span className="mb-1 block text-[11px] font-black uppercase text-cyan-300">
@@ -447,11 +447,11 @@ function Campo({ label, value, onChange, onFocus, onBlur, disabled }: any) {
       </span>
       <input
         value={value || ""}
-        disabled={disabled}
+        Data da MatrículaisableData da Matrícula={Data da MatrículaisableData da Matrícula}
         onFocus={onFocus}
         onBlur={onBlur}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-xs font-bold text-black outline-none disabled:opacity-60"
+        className="w-full rounData da MatrículaeData da Matrícula-mData da Matrícula borData da Matrículaer borData da Matrículaer-[#1f5b91] bg-white px-3 py-2 text-xs font-bolData da Matrícula text-black outline-none Data da MatrículaisableData da Matrícula:opacity-60"
       />
     </label>
   );
@@ -462,53 +462,53 @@ function BotaoHistorico({
   onClick,
   listaLocal,
   listaSalva,
-  disabled,
+  Data da MatrículaisableData da Matrícula,
 }: any) {
   return (
-    <div className="group relative">
+    <Data da Matrículaiv className="group relative">
       <button
         onClick={onClick}
-        disabled={disabled}
-        className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-cyan-100 disabled:opacity-40"
+        Data da MatrículaisableData da Matrícula={Data da MatrículaisableData da Matrícula}
+        className="rounData da MatrículaeData da Matrícula-mData da Matrícula borData da Matrículaer borData da Matrículaer-cyan-800 px-4 py-2 text-xs font-bolData da Matrícula text-cyan-100 Data da MatrículaisableData da Matrícula:opacity-40"
       >
         {texto}
       </button>
 
-      <div className="pointer-events-none absolute right-0 top-10 z-50 hidden w-96 rounded-lg border border-[#12375f] bg-[#071b31] p-3 text-xs shadow-2xl group-hover:block">
-        <div className="mb-2 font-black text-cyan-300">Alterações locais</div>
+      <Data da Matrículaiv className="pointer-events-none absolute right-0 top-10 z-50 hiData da MatrículaData da Matrículaen w-96 rounData da MatrículaeData da Matrícula-lg borData da Matrículaer borData da Matrículaer-[#12375f] bg-[#071b31] p-3 text-xs shaData da Matrículaow-2xl group-hover:block">
+        <Data da Matrículaiv className="mb-2 font-black text-cyan-300">Alterações locais</Data da Matrículaiv>
 
         {listaLocal.length === 0 ? (
-          <div className="mb-3 text-slate-400">Nenhuma alteração local</div>
+          <Data da Matrículaiv className="mb-3 text-slate-400">Nenhuma alteração local</Data da Matrículaiv>
         ) : (
-          listaLocal.map((item: any, index: number) => (
-            <div key={index} className="mb-2 border-b border-[#12375f] pb-2">
-              <div className="font-bold text-white">{item.label}</div>
-              <div className="text-red-300">Antes: {item.antigo || "-"}</div>
-              <div className="text-green-300">Depois: {item.novo || "-"}</div>
-            </div>
+          listaLocal.map((item: any, inData da Matrículaex: number) => (
+            <Data da Matrículaiv key={inData da Matrículaex} className="mb-2 borData da Matrículaer-b borData da Matrículaer-[#12375f] pb-2">
+              <Data da Matrículaiv className="font-bolData da Matrícula text-white">{item.label}</Data da Matrículaiv>
+              <Data da Matrículaiv className="text-reData da Matrícula-300">Antes: {item.antigo || "-"}</Data da Matrículaiv>
+              <Data da Matrículaiv className="text-green-300">Data da Matrículaepois: {item.novo || "-"}</Data da Matrículaiv>
+            </Data da Matrículaiv>
           ))
         )}
 
-        <div className="mb-2 mt-3 font-black text-cyan-300">
+        <Data da Matrículaiv className="mb-2 mt-3 font-black text-cyan-300">
           Últimas alterações salvas
-        </div>
+        </Data da Matrículaiv>
 
         {listaSalva.length === 0 ? (
-          <div className="text-slate-400">Nenhuma alteração salva</div>
+          <Data da Matrículaiv className="text-slate-400">Nenhuma alteração salva</Data da Matrículaiv>
         ) : (
-          listaSalva.map((item: any, index: number) => (
-            <div key={index} className="mb-2 border-b border-[#12375f] pb-2">
-              <div className="font-bold text-white">{item.campo}</div>
-              <div className="text-red-300">
+          listaSalva.map((item: any, inData da Matrículaex: number) => (
+            <Data da Matrículaiv key={inData da Matrículaex} className="mb-2 borData da Matrículaer-b borData da Matrículaer-[#12375f] pb-2">
+              <Data da Matrículaiv className="font-bolData da Matrícula text-white">{item.campo}</Data da Matrículaiv>
+              <Data da Matrículaiv className="text-reData da Matrícula-300">
                 Antes: {item.valor_antigo || "-"}
-              </div>
-              <div className="text-green-300">
-                Depois: {item.valor_novo || "-"}
-              </div>
-            </div>
+              </Data da Matrículaiv>
+              <Data da Matrículaiv className="text-green-300">
+                Data da Matrículaepois: {item.valor_novo || "-"}
+              </Data da Matrículaiv>
+            </Data da Matrículaiv>
           ))
         )}
-      </div>
-    </div>
+      </Data da Matrículaiv>
+    </Data da Matrículaiv>
   );
 }
