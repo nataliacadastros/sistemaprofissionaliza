@@ -45,6 +45,96 @@ function pegarCPF(a: any) {
   return limparValor(a[chaveCPF]);
 }
 
+type OpcaoCidade = {
+  nome: string;
+  uf: string;
+  codigo: string;
+};
+
+type PendenciaCidade = {
+  chave: string;
+  cidadeOriginal: string;
+  opcoes: OpcaoCidade[];
+};
+
+function normalizarCidade(valor: any) {
+  return limparValor(valor)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function pegarValorPorPossiveisColunas(linha: any, possiveis: string[]) {
+  const chaves = Object.keys(linha || {});
+
+  const encontrada = chaves.find((chave) =>
+    possiveis.includes(normalizarChave(chave))
+  );
+
+  return encontrada ? limparValor(linha[encontrada]) : "";
+}
+
+function montarMapaCidades(linhas: any[]) {
+  const mapa: Record<string, OpcaoCidade[]> = {};
+
+  linhas.forEach((linha) => {
+    const nome =
+      pegarValorPorPossiveisColunas(linha, [
+        "CIDADE",
+        "NOME",
+        "NOME CIDADE",
+        "NOME_CIDADE",
+        "MUNICIPIO",
+        "MUNICÍPIO",
+      ]) || "";
+
+    const uf =
+      pegarValorPorPossiveisColunas(linha, [
+        "UF",
+        "ESTADO",
+        "SIGLA",
+        "SIGLA UF",
+        "SIGLA_UF",
+      ]) || "";
+
+    const codigo =
+      pegarValorPorPossiveisColunas(linha, [
+        "CODIGO",
+        "CÓDIGO",
+        "COD",
+        "ID",
+        "IBGE",
+        "CODIGO IBGE",
+        "CÓDIGO IBGE",
+        "CODIGO_CIDADE",
+        "CÓDIGO CIDADE",
+        "COD CIDADE",
+      ]) || "";
+
+    const chave = normalizarCidade(nome);
+
+    if (!chave || !codigo) return;
+
+    if (!mapa[chave]) mapa[chave] = [];
+
+    const jaExiste = mapa[chave].some(
+      (opcao) => opcao.codigo === codigo && opcao.uf === uf
+    );
+
+    if (!jaExiste) {
+      mapa[chave].push({
+        nome: limparValor(nome).toUpperCase(),
+        uf: limparValor(uf).toUpperCase(),
+        codigo: limparValor(codigo),
+      });
+    }
+  });
+
+  return mapa;
+}
+
 export default function SubirAlunosPage() {
   const router = useRouter();
   const [carregandoLogin, setCarregandoLogin] = useState(true);
@@ -56,6 +146,11 @@ export default function SubirAlunosPage() {
   const [turmaIngles, setTurmaIngles] = useState("");
   const [dadosTags, setDadosTags] = useState<any>(tagsIniciais);
   const [dfFinal, setDfFinal] = useState<any[] | null>(null);
+  const [mapaCidades, setMapaCidades] = useState<Record<string, OpcaoCidade[]>>({});
+  const [erroMapaCidades, setErroMapaCidades] = useState("");
+  const [escolhasCidade, setEscolhasCidade] = useState<Record<string, OpcaoCidade>>({});
+  const [pendenciasCidade, setPendenciasCidade] = useState<PendenciaCidade[]>([]);
+  const [rawProcessado, setRawProcessado] = useState<any[]>([]);
 
   const [manual, setManual] = useState({
     ids: "",
@@ -116,6 +211,48 @@ export default function SubirAlunosPage() {
     }
 
     buscar();
+  }, [carregandoLogin]);
+
+  useEffect(() => {
+    if (carregandoLogin) return;
+
+    async function carregarCidades() {
+      try {
+        setErroMapaCidades("");
+
+        const response = await fetch("/cidades.xlsx");
+
+        if (!response.ok) {
+          setErroMapaCidades(
+            "Arquivo cidades.xlsx não encontrado em /public/cidades.xlsx"
+          );
+          return;
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const primeiraAba = workbook.SheetNames[0];
+
+        if (!primeiraAba) {
+          setErroMapaCidades("Arquivo cidades.xlsx não possui abas.");
+          return;
+        }
+
+        const sheet = workbook.Sheets[primeiraAba];
+        const linhas: any[] = XLSX.utils.sheet_to_json(sheet, {
+          defval: "",
+        });
+
+        const mapa = montarMapaCidades(linhas);
+
+        setMapaCidades(mapa);
+      } catch (error) {
+        console.error("Erro ao carregar cidades.xlsx:", error);
+        setErroMapaCidades("Erro ao carregar cidades.xlsx.");
+      }
+    }
+
+    carregarCidades();
   }, [carregandoLogin]);
 
   function salvarTags(novo: any) {
@@ -199,46 +336,39 @@ export default function SubirAlunosPage() {
     });
   }
 
-  function processarDados() {
-    let rawList: any[] = [];
+  function resolverCidadeParaCity2(cidadeOriginal: any, pendencias: Record<string, PendenciaCidade>) {
+    const cidadeLimpa = limparValor(cidadeOriginal).trim();
+    const chave = normalizarCidade(cidadeLimpa);
 
-    if (modo === "MANUAL") {
-      const ids = manual.ids.trim().split("\n");
-      const nomes = manual.nomes.trim().split("\n");
-      const celulares = manual.celulares.trim().split("\n");
-      const documentos = manual.documentos.trim().split("\n");
-      const cidades = manual.cidades.trim().split("\n");
-      const cursos = manual.cursos.trim().split("\n");
-      const pagamentos = manual.pagamentos.trim().split("\n");
-      const vendedores = manual.vendedores.trim().split("\n");
-      const datas = manual.datas.trim().split("\n");
+    if (!chave) return "";
 
-      for (let i = 0; i < ids.length; i++) {
-        rawList.push({
-          User: ids[i] || "",
-          Nome: nomes[i] || "",
-          Cell: celulares[i] || "",
-          Doc: documentos[i] || "",
-          City: cidades[i] || "",
-          Cour: cursos[i] || "",
-          Pay: pagamentos[i] || "",
-          Sell: vendedores[i] || "",
-          Date: datas[i] || "",
-        });
-      }
-    } else {
-      rawList = dfAutoReady.map((r) => ({
-        User: limparValor(r["ID"]),
-        Nome: limparValor(r["Aluno"]),
-        Cell: limparValor(r["Tel. Aluno"]),
-        Doc: pegarCPF(r),
-        City: limparValor(r["Cidade"]),
-        Cour: limparValor(r["Curso"]),
-        Pay: limparValor(r["Pagamento"]),
-        Sell: limparValor(r["Vendedor"]),
-        Date: limparValor(r["Data Matricula"] || r["Data Matrícula"]),
-      }));
+    const opcoes = mapaCidades[chave] || [];
+
+    if (opcoes.length === 1) {
+      return opcoes[0].codigo;
     }
+
+    if (opcoes.length > 1) {
+      const escolha = escolhasCidade[chave];
+
+      if (escolha) {
+        return escolha.codigo;
+      }
+
+      pendencias[chave] = {
+        chave,
+        cidadeOriginal: cidadeLimpa.toUpperCase(),
+        opcoes,
+      };
+
+      return cidadeLimpa.toUpperCase();
+    }
+
+    return cidadeLimpa.toUpperCase();
+  }
+
+  function gerarDfFinal(rawList: any[]) {
+    const pendenciasEncontradas: Record<string, PendenciaCidade> = {};
 
     const processed = rawList.map((item) => {
       const cOrig = String(item.Cour || "").toUpperCase();
@@ -290,7 +420,7 @@ export default function SubirAlunosPage() {
         lastname: sobrenome,
         cellphone2: limparValor(item.Cell),
         document: limparValor(item.Doc),
-        city2: limparValor(item.City),
+        city2: resolverCidadeParaCity2(item.City, pendenciasEncontradas),
         courses: cursoFinal,
         payment: pagamentoFinal,
         observation: observacao,
@@ -304,7 +434,65 @@ export default function SubirAlunosPage() {
       };
     });
 
+    setPendenciasCidade(Object.values(pendenciasEncontradas));
     setDfFinal(processed);
+  }
+
+  function processarDados() {
+    let rawList: any[] = [];
+
+    if (modo === "MANUAL") {
+      const ids = manual.ids.trim().split("\n");
+      const nomes = manual.nomes.trim().split("\n");
+      const celulares = manual.celulares.trim().split("\n");
+      const documentos = manual.documentos.trim().split("\n");
+      const cidades = manual.cidades.trim().split("\n");
+      const cursos = manual.cursos.trim().split("\n");
+      const pagamentos = manual.pagamentos.trim().split("\n");
+      const vendedores = manual.vendedores.trim().split("\n");
+      const datas = manual.datas.trim().split("\n");
+
+      for (let i = 0; i < ids.length; i++) {
+        rawList.push({
+          User: ids[i] || "",
+          Nome: nomes[i] || "",
+          Cell: celulares[i] || "",
+          Doc: documentos[i] || "",
+          City: cidades[i] || "",
+          Cour: cursos[i] || "",
+          Pay: pagamentos[i] || "",
+          Sell: vendedores[i] || "",
+          Date: datas[i] || "",
+        });
+      }
+    } else {
+      rawList = dfAutoReady.map((r) => ({
+        User: limparValor(r["ID"]),
+        Nome: limparValor(r["Aluno"]),
+        Cell: limparValor(r["Tel. Aluno"]),
+        Doc: pegarCPF(r),
+        City: limparValor(r["Cidade"]),
+        Cour: limparValor(r["Curso"]),
+        Pay: limparValor(r["Pagamento"]),
+        Sell: limparValor(r["Vendedor"]),
+        Date: limparValor(r["Data Matricula"] || r["Data Matrícula"]),
+      }));
+    }
+
+    setRawProcessado(rawList);
+    gerarDfFinal(rawList);
+  }
+
+  useEffect(() => {
+    if (rawProcessado.length === 0) return;
+
+    gerarDfFinal(rawProcessado);
+  }, [escolhasCidade]);
+  function selecionarCidadeDuplicada(chave: string, opcao: OpcaoCidade) {
+    setEscolhasCidade((prev) => ({
+      ...prev,
+      [chave]: opcao,
+    }));
   }
 
   function atualizarFormaPendente(username: string, forma: string) {
@@ -356,7 +544,7 @@ export default function SubirAlunosPage() {
   }
 
   const pendentes = dfFinal?.filter((d) => d.payment === "PENDENTE") || [];
-  const pronto = dfFinal && pendentes.length === 0;
+  const pronto = dfFinal && pendentes.length === 0 && pendenciasCidade.length === 0;
   const cidadesDownload = Array.from(new Set((dfFinal || []).map((d) => d.city2)));
 
   return (
@@ -415,6 +603,16 @@ export default function SubirAlunosPage() {
               salvarTags({ ...dadosTags, turma_ingles_subir: valor });
             }}
           />
+
+          <div className="mb-4 rounded-md border border-cyan-900 bg-[#0b1f36] p-3 text-xs font-bold text-cyan-300">
+            {erroMapaCidades ? (
+              <span className="text-red-300">{erroMapaCidades}</span>
+            ) : (
+              <span>
+                Mapa de cidades carregado: {Object.keys(mapaCidades).length} nomes encontrados.
+              </span>
+            )}
+          </div>
 
           {modo === "AUTOMÁTICO" ? (
             <div className="mt-5">
@@ -522,6 +720,43 @@ export default function SubirAlunosPage() {
         >
           🚀 PROCESSAR DADOS
         </button>
+
+        {pendenciasCidade.length > 0 && (
+          <div className="mt-6 rounded-xl border border-yellow-600 bg-[#2b2507] p-5 shadow-2xl">
+            <h2 className="mb-2 text-sm font-black text-yellow-300">
+              ⚠️ Selecione a cidade correta
+            </h2>
+
+            <p className="mb-4 text-xs font-bold text-yellow-100">
+              Algumas cidades possuem o mesmo nome em estados diferentes. Selecione a opção correta para liberar o download da planilha.
+            </p>
+
+            <div className="space-y-4">
+              {pendenciasCidade.map((pendencia) => (
+                <div
+                  key={pendencia.chave}
+                  className="rounded-lg border border-yellow-800 bg-[#0b1f36] p-4"
+                >
+                  <div className="mb-3 text-sm font-black text-yellow-300">
+                    {pendencia.cidadeOriginal}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {pendencia.opcoes.map((opcao) => (
+                      <button
+                        key={`${opcao.codigo}-${opcao.uf}`}
+                        onClick={() => selecionarCidadeDuplicada(pendencia.chave, opcao)}
+                        className="rounded-md border border-cyan-300 bg-cyan-300 px-4 py-2 text-xs font-black text-black hover:bg-cyan-200"
+                      >
+                        {opcao.nome} {opcao.uf ? `- ${opcao.uf}` : ""} | Cód. {opcao.codigo}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {dfFinal && dfFinal.length > 0 && (
           <div className="mt-6 rounded-xl border border-[#12375f] bg-[#071b31] p-5 shadow-2xl">
