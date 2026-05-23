@@ -78,6 +78,7 @@ export default function CriarContatosPage() {
         inicio += 1000;
       }
 
+      // 🔥 IMPORTANTE: NÃO ORDENA — mantém igual gerenciamento
       setDados(
         todos.filter(
           (a) => a["ID"] && a["Aluno"] && a["Excluido"] !== true
@@ -110,19 +111,14 @@ export default function CriarContatosPage() {
     setDatas((prev) => prev.filter((d) => d !== data));
   }
 
+  // 🔥 FILTRO + ORDEM CORRETA
   const filtrados = useMemo(() => {
     return dados
       .filter((a) =>
         datas.includes(dataBRparaISO(a["Data Cadastro"]))
       )
-      .sort((a, b) => {
-        const dataA = dataBRparaISO(a["Data Cadastro"]);
-        const dataB = dataBRparaISO(b["Data Cadastro"]);
-        return (
-          dataB.localeCompare(dataA) ||
-          Number(b["ID"]) - Number(a["ID"])
-        );
-      });
+      .slice() // mantém ordem original
+      .reverse(); // 🔥 INVERTE (igual você pediu)
   }, [dados, datas]);
 
   const cidades = useMemo(() => {
@@ -179,7 +175,7 @@ export default function CriarContatosPage() {
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
 
-      {/* MENU PADRÃO */}
+      {/* MENU */}
       <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
         {[
           ["📑 CADASTRO", "/cadastro"],
@@ -210,6 +206,7 @@ export default function CriarContatosPage() {
         </button>
       </div>
 
+      {/* CONTEÚDO */}
       <section className="px-6 pt-24">
 
         <h1 className="text-xl font-black mb-4">📇 CRIAR CONTATOS</h1>
