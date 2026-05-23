@@ -78,7 +78,6 @@ export default function CriarContatosPage() {
         inicio += 1000;
       }
 
-      // 🔥 IMPORTANTE: NÃO ORDENA — mantém igual gerenciamento
       setDados(
         todos.filter(
           (a) => a["ID"] && a["Aluno"] && a["Excluido"] !== true
@@ -111,14 +110,17 @@ export default function CriarContatosPage() {
     setDatas((prev) => prev.filter((d) => d !== data));
   }
 
-  // 🔥 FILTRO + ORDEM CORRETA
+  // 🔥 ORDENAÇÃO POR ORDEM (CRESCENTE)
   const filtrados = useMemo(() => {
     return dados
       .filter((a) =>
         datas.includes(dataBRparaISO(a["Data Cadastro"]))
       )
-      .slice() // mantém ordem original
-      .reverse(); // 🔥 INVERTE (igual você pediu)
+      .sort((a, b) => {
+        const ordemA = Number(a["Ordem"] ?? 999999);
+        const ordemB = Number(b["Ordem"] ?? 999999);
+        return ordemA - ordemB;
+      });
   }, [dados, datas]);
 
   const cidades = useMemo(() => {
@@ -213,7 +215,6 @@ export default function CriarContatosPage() {
 
         <div className="bg-[#071b31] p-5 rounded-xl border border-[#12375f]">
 
-          {/* DATA */}
           <div className="flex gap-2 mb-4">
             <input
               type="date"
@@ -230,7 +231,6 @@ export default function CriarContatosPage() {
             </button>
           </div>
 
-          {/* DATAS */}
           <div className="mb-4 flex flex-wrap gap-2">
             {datas.map((d) => (
               <button
@@ -243,7 +243,6 @@ export default function CriarContatosPage() {
             ))}
           </div>
 
-          {/* CIDADES */}
           <div className="mb-4 flex flex-wrap gap-2">
             <button
               onClick={() => setCidadesSel([])}
@@ -267,13 +266,11 @@ export default function CriarContatosPage() {
             ))}
           </div>
 
-          {/* CONTADORES */}
           <div className="flex gap-4 mb-4 text-sm">
             <div>Alunos: {preview.length}</div>
             <div>Linhas CSV: {linhas.length}</div>
           </div>
 
-          {/* BOTÃO */}
           <button
             onClick={baixar}
             className="w-full bg-green-700 py-3 font-black"
