@@ -20,7 +20,8 @@ function isoParaBR(dataISO: string) {
 }
 
 function limparValor(valor: any) {
-  if (!valor) return "";
+  if (valor === null || valor === undefined) return "";
+  if (String(valor).toLowerCase() === "null") return "";
   return String(valor);
 }
 
@@ -28,22 +29,31 @@ function limparTelefone(valor: any) {
   return limparValor(valor).replace(/\D/g, "");
 }
 
-function montarNomeArquivo(datas: string[]) {
-  if (datas.length === 1) {
-    return `Contatos dia ${isoParaBR(datas[0]).replaceAll("/", "-")}.csv`;
-  }
-  return `Contatos dia VARIOS.csv`;
+function montarNomeArquivo(datas: string[], cidades: string[]) {
+  const datasBR = datas.map((d) =>
+    isoParaBR(d).replaceAll("/", "-")
+  );
+
+  const parteData =
+    datasBR.length === 1 ? datasBR[0] : datasBR.join("_");
+
+  const parteCidade =
+    cidades.length === 0
+      ? "TODAS_AS_CIDADES"
+      : cidades.join("_");
+
+  return `Contatos dia ${parteData} ${parteCidade}.csv`;
 }
 
 function baixarCSV(nomeArquivo: string, linhas: string[][]) {
   const cabecalho = ["Nome", ",", "Telefone"];
 
   const conteudo = [cabecalho, ...linhas]
-    .map((linha) => linha.join(";")) // 🔥 SEM ASPAS
+    .map((linha) => linha.join(";")) // 🔥 padrão correto
     .join("\r\n");
 
   const blob = new Blob([conteudo], {
-    type: "text/csv;charset=windows-1252;", // 🔥 padrão Excel BR
+    type: "text/csv;charset=windows-1252;",
   });
 
   const url = URL.createObjectURL(blob);
@@ -56,31 +66,27 @@ function baixarCSV(nomeArquivo: string, linhas: string[][]) {
   URL.revokeObjectURL(url);
 }
 
+function ordenar(a: any, b: any) {
+  return Number(a["ID"] || 0) - Number(b["ID"] || 0);
+}
+
 export default function CriarContatosPage() {
   const router = useRouter();
 
-  const [carregandoLogin, setCarregandoLogin] = useState(true);
+  const [carregando, setCarregando] = useState(true);
   const [dados, setDados] = useState<any[]>([]);
   const [dataAtual, setDataAtual] = useState("");
-  const [datasSelecionadas, setDatasSelecionadas] = useState<string[]>([]);
-  const [cidadesSelecionadas, setCidadesSelecionadas] = useState<string[]>([]);
+  const [datas, setDatas] = useState<string[]>([]);
+  const [cidadesSel, setCidadesSel] = useState<string[]>([]);
 
   useEffect(() => {
-    async function verificarLogin() {
+    async function init() {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
         router.push("/login");
         return;
       }
-      setCarregandoLogin(false);
-    }
-    verificarLogin();
-  }, [router]);
 
-  useEffect(() => {
-    if (carregandoLogin) return;
-
-    async function buscar() {
       let todos: any[] = [];
       let inicio = 0;
 
@@ -98,116 +104,148 @@ export default function CriarContatosPage() {
         inicio += 1000;
       }
 
-      setDados(todos.filter((a) => a["Excluido"] !== true));
+      setDados(
+        todos.filter(
+          (a) =>
+            a["ID"] && a["Aluno"] && a["Excluido"] !== true
+        )
+      );
+
+      setCarregando(false);
     }
 
-    buscar();
-  }, [carregandoLogin]);
+    init();
+  }, []);
 
   async function sair() {
     await supabase.auth.signOut();
     router.push("/login");
   }
 
-  function adicionarData() {
+  function addData() {
     if (!dataAtual) return;
 
-    if (!datasSelecionadas.includes(dataAtual)) {
-      setDatasSelecionadas((prev) => [...prev, dataAtual]);
+    if (!datas.includes(dataAtual)) {
+      setDatas((prev) => [...prev, dataAtual]);
     }
 
     setDataAtual("");
+    setCidadesSel([]);
   }
 
-  const alunosFiltrados = useMemo(() => {
+  const filtrados = useMemo(() => {
     return dados.filter((a) =>
-      datasSelecionadas.includes(
-        dataBRparaISO(a["Data Cadastro"] || "")
-      )
+      datas.includes(dataBRparaISO(a["Data Cadastro"]))
     );
-  }, [dados, datasSelecionadas]);
+  }, [dados, datas]);
 
-  const cidadesDisponiveis = useMemo(() => {
+  const cidades = useMemo(() => {
     return Array.from(
       new Set(
-        alunosFiltrados.map((a) => a["Cidade"]).filter(Boolean)
+        filtrados
+          .map((a) => limparValor(a["Cidade"]))
+          .filter(Boolean)
       )
     );
-  }, [alunosFiltrados]);
+  }, [filtrados]);
 
-  const alunosPreview = useMemo(() => {
-    let lista = alunosFiltrados;
+  const preview = useMemo(() => {
+    let lista = filtrados;
 
-    if (cidadesSelecionadas.length > 0) {
+    if (cidadesSel.length > 0) {
       lista = lista.filter((a) =>
-        cidadesSelecionadas.includes(a["Cidade"])
+        cidadesSel.includes(a["Cidade"])
       );
     }
 
-    return lista;
-  }, [alunosFiltrados, cidadesSelecionadas]);
+    return lista.sort(ordenar);
+  }, [filtrados, cidadesSel]);
 
   const linhas = useMemo(() => {
-    const result: string[][] = [];
+    const arr: string[][] = [];
 
-    alunosPreview.forEach((a) => {
+    preview.forEach((a) => {
       const nome = `${a["ID"]} ${a["Aluno"]}`.toUpperCase();
 
-      const telResp = limparTelefone(a["Tel. Resp"]);
-      const telAluno = limparTelefone(a["Tel. Aluno"]);
+      const resp = limparTelefone(a["Tel. Resp"]);
+      const aluno = limparTelefone(a["Tel. Aluno"]);
 
-      if (telResp) result.push([nome, ",", telResp]);
-      if (telAluno) result.push([nome, ",", telAluno]);
+      if (resp) arr.push([nome, ",", resp]);
+      if (aluno) arr.push([nome, ",", aluno]);
     });
 
-    return result;
-  }, [alunosPreview]);
+    return arr;
+  }, [preview]);
 
   function baixar() {
     if (linhas.length === 0) return;
-    baixarCSV(montarNomeArquivo(datasSelecionadas), linhas);
+    baixarCSV(montarNomeArquivo(datas, cidadesSel), linhas);
   }
 
-  if (carregandoLogin) return <div>Carregando...</div>;
+  if (carregando) return <div>Carregando...</div>;
 
   return (
-    <main className="min-h-screen bg-[#0b0e1e] text-white">
+    <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
 
-      <button onClick={sair}>SAIR</button>
+      {/* MENU */}
+      <div className="fixed top-0 w-full bg-[#edbe13] flex gap-2 p-2 z-50">
+        <a href="/cadastro">CADASTRO</a>
+        <a href="/gerenciamento">GERENCIAMENTO</a>
+        <a href="/relatorios">RELATÓRIOS</a>
+        <a href="/subir-alunos">SUBIR</a>
+        <a href="/subir-alunos-ingles">INGLÊS</a>
+        <a href="/criar-contatos">CONTATOS</a>
 
-      <input
-        type="date"
-        value={dataAtual}
-        onChange={(e) => setDataAtual(e.target.value)}
-      />
-
-      <button onClick={adicionarData}>Adicionar data</button>
-
-      <div>
-        {datasSelecionadas.map((d) => (
-          <span key={d}>{isoParaBR(d)}</span>
-        ))}
+        <button onClick={sair}>SAIR</button>
       </div>
 
-      <div>
-        {cidadesDisponiveis.map((c) => (
-          <button
-            key={c}
-            onClick={() =>
-              setCidadesSelecionadas((prev) =>
-                prev.includes(c)
-                  ? prev.filter((x) => x !== c)
-                  : [...prev, c]
-              )
-            }
-          >
-            {c}
-          </button>
-        ))}
-      </div>
+      <section className="pt-20 p-4">
 
-      <button onClick={baixar}>BAIXAR CSV</button>
+        <h1>CRIAR CONTATOS</h1>
 
+        <input
+          type="date"
+          value={dataAtual}
+          onChange={(e) => setDataAtual(e.target.value)}
+        />
+
+        <button onClick={addData}>Adicionar</button>
+
+        <div>
+          {datas.map((d) => (
+            <span key={d}>{isoParaBR(d)} </span>
+          ))}
+        </div>
+
+        <div>
+          {cidades.map((c) => (
+            <button
+              key={c}
+              onClick={() =>
+                setCidadesSel((prev) =>
+                  prev.includes(c)
+                    ? prev.filter((x) => x !== c)
+                    : [...prev, c]
+                )
+              }
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <button onClick={baixar}>BAIXAR CSV</button>
+
+        <div>
+          <h3>Preview CSV</h3>
+          {linhas.map((l, i) => (
+            <div key={i}>
+              {l[0]} | {l[1]} | {l[2]}
+            </div>
+          ))}
+        </div>
+
+      </section>
     </main>
   );
 }
