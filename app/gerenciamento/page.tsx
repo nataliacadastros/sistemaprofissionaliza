@@ -185,7 +185,7 @@ export default function GerenciamentoPage() {
       "Curso",
       "Pagamento",
       "Vendedor",
-      "Data Matricula",
+      "Data Matrícula",
       "Data Matrícula",
       "Excluido",
       "Excluido_em",
