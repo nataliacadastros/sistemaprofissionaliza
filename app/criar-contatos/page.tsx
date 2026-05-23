@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 
 function dataBRparaISO(data?: string) {
   if (!data) return "";
-  const limpa = String(data).trim();
-  const partes = limpa.split("/");
+  const partes = String(data).trim().split("/");
   if (partes.length !== 3) return "";
   const [dia, mes, ano] = partes;
   return `${ano}-${mes}-${dia}`;
@@ -30,8 +29,8 @@ function baixarCSV(nomeArquivo: string, linhas: string[][]) {
     .map((linha) => linha.join(";"))
     .join("\r\n");
 
-  const blob = new Blob([conteudo], {
-    type: "text/csv;charset=windows-1252;",
+  const blob = new Blob(["\uFEFF" + conteudo], {
+    type: "text/csv;charset=utf-8;",
   });
 
   const url = URL.createObjectURL(blob);
@@ -79,7 +78,12 @@ export default function CriarContatosPage() {
         inicio += 1000;
       }
 
-      setDados(todos.filter((a) => a["Excluido"] !== true));
+      setDados(
+        todos.filter(
+          (a) => a["ID"] && a["Aluno"] && a["Excluido"] !== true
+        )
+      );
+
       setLoading(false);
     }
 
@@ -91,7 +95,7 @@ export default function CriarContatosPage() {
     router.push("/login");
   }
 
-  function addData() {
+  function adicionarData() {
     if (!dataAtual) return;
 
     if (!datas.includes(dataAtual)) {
@@ -102,28 +106,37 @@ export default function CriarContatosPage() {
     setCidadesSel([]);
   }
 
+  function removerData(data: string) {
+    setDatas((prev) => prev.filter((d) => d !== data));
+  }
+
   const filtrados = useMemo(() => {
-    return dados.filter((a) =>
-      datas.includes(dataBRparaISO(a["Data Cadastro"]))
-    );
+    return dados
+      .filter((a) =>
+        datas.includes(dataBRparaISO(a["Data Cadastro"]))
+      )
+      .sort((a, b) => {
+        const dataA = dataBRparaISO(a["Data Cadastro"]);
+        const dataB = dataBRparaISO(b["Data Cadastro"]);
+        return (
+          dataB.localeCompare(dataA) ||
+          Number(b["ID"]) - Number(a["ID"])
+        );
+      });
   }, [dados, datas]);
 
   const cidades = useMemo(() => {
     return Array.from(
       new Set(filtrados.map((a) => a["Cidade"]).filter(Boolean))
-    );
+    ).sort();
   }, [filtrados]);
 
   const preview = useMemo(() => {
-    let lista = filtrados;
+    if (cidadesSel.length === 0) return filtrados;
 
-    if (cidadesSel.length > 0) {
-      lista = lista.filter((a) =>
-        cidadesSel.includes(a["Cidade"])
-      );
-    }
-
-    return lista;
+    return filtrados.filter((a) =>
+      cidadesSel.includes(a["Cidade"])
+    );
   }, [filtrados, cidadesSel]);
 
   const linhas = useMemo(() => {
@@ -142,9 +155,16 @@ export default function CriarContatosPage() {
     return arr;
   }, [preview]);
 
+  function toggleCidade(cidade: string) {
+    setCidadesSel((prev) =>
+      prev.includes(cidade)
+        ? prev.filter((c) => c !== cidade)
+        : [...prev, cidade]
+    );
+  }
+
   function baixar() {
     if (!linhas.length) return;
-
     baixarCSV("contatos.csv", linhas);
   }
 
@@ -175,7 +195,7 @@ export default function CriarContatosPage() {
             className={`shrink-0 rounded-md border px-5 py-2 text-xs font-bold ${
               tab.includes("CRIAR CONTATOS")
                 ? "border-cyan-300 bg-cyan-300 text-black"
-                : "bg-white/20 text-[#1f295a]"
+                : "border-slate-700/30 bg-white/20 text-[#1f295a]"
             }`}
           >
             {tab}
@@ -184,64 +204,84 @@ export default function CriarContatosPage() {
 
         <button
           onClick={sair}
-          className="rounded-md bg-red-600 px-4 py-2 text-white"
+          className="rounded-md bg-red-600 px-4 py-2 text-white font-bold"
         >
           SAIR
         </button>
       </div>
 
-      {/* CONTEÚDO */}
       <section className="px-6 pt-24">
 
-        <h1 className="text-xl font-black mb-4">CRIAR CONTATOS</h1>
+        <h1 className="text-xl font-black mb-4">📇 CRIAR CONTATOS</h1>
 
         <div className="bg-[#071b31] p-5 rounded-xl border border-[#12375f]">
 
-          <input
-            type="date"
-            value={dataAtual}
-            onChange={(e) => setDataAtual(e.target.value)}
-            className="mb-3 px-3 py-2 text-black"
-          />
+          {/* DATA */}
+          <div className="flex gap-2 mb-4">
+            <input
+              type="date"
+              value={dataAtual}
+              onChange={(e) => setDataAtual(e.target.value)}
+              className="px-3 py-2 text-black"
+            />
 
-          <button
-            onClick={addData}
-            className="ml-2 bg-cyan-400 px-4 py-2 font-bold"
-          >
-            ADICIONAR DATA
-          </button>
+            <button
+              onClick={adicionarData}
+              className="bg-cyan-400 px-4 py-2 font-bold"
+            >
+              ADICIONAR
+            </button>
+          </div>
 
-          <div className="mt-3">
+          {/* DATAS */}
+          <div className="mb-4 flex flex-wrap gap-2">
             {datas.map((d) => (
-              <span key={d} className="mr-2">
-                {isoParaBR(d)}
-              </span>
+              <button
+                key={d}
+                onClick={() => removerData(d)}
+                className="bg-[#0b2542] px-3 py-1 rounded"
+              >
+                {isoParaBR(d)} ✕
+              </button>
             ))}
           </div>
 
-          <div className="mt-4">
+          {/* CIDADES */}
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => setCidadesSel([])}
+              className="bg-cyan-300 px-3 py-1 rounded text-black"
+            >
+              Todas
+            </button>
+
             {cidades.map((c) => (
               <button
                 key={c}
-                onClick={() =>
-                  setCidadesSel((prev) =>
-                    prev.includes(c)
-                      ? prev.filter((x) => x !== c)
-                      : [...prev, c]
-                  )
-                }
-                className="mr-2 mb-2 border px-3 py-1"
+                onClick={() => toggleCidade(c)}
+                className={`px-3 py-1 rounded ${
+                  cidadesSel.includes(c)
+                    ? "bg-cyan-400 text-black"
+                    : "bg-[#0b2542]"
+                }`}
               >
                 {c}
               </button>
             ))}
           </div>
 
+          {/* CONTADORES */}
+          <div className="flex gap-4 mb-4 text-sm">
+            <div>Alunos: {preview.length}</div>
+            <div>Linhas CSV: {linhas.length}</div>
+          </div>
+
+          {/* BOTÃO */}
           <button
             onClick={baixar}
-            className="mt-4 w-full bg-green-700 py-3 font-black"
+            className="w-full bg-green-700 py-3 font-black"
           >
-            BAIXAR CSV
+            📥 BAIXAR CSV
           </button>
 
         </div>
