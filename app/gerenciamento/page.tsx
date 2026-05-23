@@ -19,6 +19,15 @@ function isoParaBR(dataISO: string) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function pegarDataMatricula(a: any) {
+  return (
+    a["Data Matrícula"] ||
+    a["Data Matricula"] ||
+    a["Data Matr�cula"] ||
+    ""
+  );
+}
+
 function ordenarAlunos(a: any, b: any) {
   const ordemA = Number(a["Ordem"] || 0);
   const ordemB = Number(b["Ordem"] || 0);
@@ -148,10 +157,16 @@ export default function GerenciamentoPage() {
       "Tel. Resp",
       "Tel. Aluno",
       "Curso",
+      "Pagamento",
+      "Vendedor",
+      "Data Matrícula",
     ];
 
     const linhas = alunosDaData.map((a) =>
-      colunas.map((coluna) => String(a[coluna] || ""))
+      colunas.map((coluna) => {
+        if (coluna === "Data Matrícula") return String(pegarDataMatricula(a) || "");
+        return String(a[coluna] || "");
+      })
     );
 
     const ws = XLSX.utils.aoa_to_sheet([colunas, ...linhas]);
@@ -165,6 +180,9 @@ export default function GerenciamentoPage() {
       { wch: 18 },
       { wch: 18 },
       { wch: 50 },
+      { wch: 45 },
+      { wch: 25 },
+      { wch: 18 },
     ];
 
     colunas.forEach((_, colIndex) => {
@@ -259,7 +277,7 @@ export default function GerenciamentoPage() {
             <input
               value={pesquisa}
               onChange={(e) => setPesquisa(e.target.value)}
-              placeholder="Pesquisar por nome, ID, cidade, telefone, curso, status..."
+              placeholder="Pesquisar por nome, ID, cidade, telefone, curso, pagamento, vendedor, status..."
               className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
             />
 
@@ -318,8 +336,8 @@ export default function GerenciamentoPage() {
         )}
 
         <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
-          <div className="min-w-[1200px]">
-            <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
+          <div className="min-w-[1900px]">
+            <div className="grid grid-cols-[110px_120px_110px_2fr_1.4fr_1.3fr_1.3fr_2fr_2fr_1.4fr_140px_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
               <div className="border-r border-[#12375f] p-3">Status</div>
               <div className="border-r border-[#12375f] p-3">Data cadastro</div>
               <div className="border-r border-[#12375f] p-3">ID do aluno</div>
@@ -328,6 +346,9 @@ export default function GerenciamentoPage() {
               <div className="border-r border-[#12375f] p-3">Tel. responsável</div>
               <div className="border-r border-[#12375f] p-3">Tel. aluno</div>
               <div className="border-r border-[#12375f] p-3">Curso contratado</div>
+              <div className="border-r border-[#12375f] p-3">Forma de pagamento</div>
+              <div className="border-r border-[#12375f] p-3">Vendedor</div>
+              <div className="border-r border-[#12375f] p-3">Data matrícula</div>
               <div className="p-3 text-center">Ações</div>
             </div>
 
@@ -335,7 +356,7 @@ export default function GerenciamentoPage() {
               <a
                 key={aluno["ID"]}
                 href={`/aluno/${aluno["ID"]}`}
-                className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+                className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.4fr_1.3fr_1.3fr_2fr_2fr_1.4fr_140px_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
               >
                 <div className="flex items-center border-r border-[#12375f] p-3">
                   <span
@@ -377,6 +398,18 @@ export default function GerenciamentoPage() {
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
                   {aluno["Curso"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Pagamento"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+                  {aluno["Vendedor"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {pegarDataMatricula(aluno) || "-"}
                 </div>
 
                 <div className="flex items-center justify-center p-3">
