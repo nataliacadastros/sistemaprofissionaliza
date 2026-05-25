@@ -529,14 +529,29 @@ export default function GerenciamentoPage() {
                 href={`/aluno/${aluno["ID"]}`}
                 className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
               >
-                <div className="flex items-center border-r border-[#12375f] p-3">
-  <select
-    value={aluno["STATUS"] || "ATIVO"}
-    onClick={(e) => e.preventDefault()}
-    onChange={async (e) => {
+                <div
+  className="flex items-center border-r border-[#12375f] p-3"
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+>
+  <button
+    onClick={async (e) => {
       e.preventDefault();
+      e.stopPropagation();
 
-      const novoStatus = e.target.value;
+      const statusAtual = aluno["STATUS"] || "ATIVO";
+
+      let novoStatus = "ATIVO";
+
+      if (statusAtual === "ATIVO") {
+        novoStatus = "CANCELADO";
+      } else if (statusAtual === "CANCELADO") {
+        novoStatus = "PENDENTE";
+      } else {
+        novoStatus = "ATIVO";
+      }
 
       const { error } = await supabase
         .from("backup alunos")
@@ -562,18 +577,20 @@ export default function GerenciamentoPage() {
         )
       );
     }}
-    className={`cursor-pointer rounded-md border px-3 py-1 text-[10px] font-black outline-none transition-all ${
-      aluno["STATUS"] === "CANCELADO"
-        ? "border-red-700 bg-red-600 text-white"
+    className={`min-w-[86px] rounded-md px-3 py-1 text-[10px] font-black transition-all ${
+      aluno["Excluido"] === true
+        ? "bg-red-950 text-red-300"
+        : aluno["STATUS"] === "CANCELADO"
+        ? "bg-red-600 text-white"
         : aluno["STATUS"] === "PENDENTE"
-        ? "border-yellow-600 bg-yellow-500 text-black"
-        : "border-green-700 bg-green-600 text-white"
+        ? "bg-yellow-500 text-black"
+        : "bg-green-600 text-white"
     }`}
   >
-    <option value="ATIVO">ATIVO</option>
-    <option value="CANCELADO">CANCELADO</option>
-    <option value="PENDENTE">PENDENTE</option>
-  </select>
+    {aluno["Excluido"] === true
+      ? "EXCLUÍDO"
+      : aluno["STATUS"] || "ATIVO"}
+  </button>
 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
