@@ -24,7 +24,7 @@ function converterDataBR(data?: string) {
 
   const [dia, mes, ano] = partes;
 
-  return new Date(`${ano}-${mes}-${dia}`).getTime();
+  return new Date(`${ano}-${mes}-${dia}T00:00:00`).getTime();
 }
 
 function ordenarAlunos(a: any, b: any) {
@@ -68,36 +68,53 @@ function formatarTelefone(valor: any) {
 export default function GerenciamentoPage() {
   const router = useRouter();
 
+  // =========================
+  // STATES
+  // =========================
+
   const [carregandoLogin, setCarregandoLogin] = useState(true);
 
   const [alunos, setAlunos] = useState<any[]>([]);
+
   const [pesquisa, setPesquisa] = useState("");
 
   const [mostrarDownload, setMostrarDownload] = useState(false);
 
-  const [intervaloDownload, setIntervaloDownload] = useState<
-    [Date | null, Date | null]
-  >([null, null]);
-
-  const [inicioDownload, fimDownload] = intervaloDownload;
-
-  const [cidadeDownload, setCidadeDownload] = useState("TODAS");
-
-  const [mostrarExcluidos, setMostrarExcluidos] = useState(false);
-
-  // =========================
-  // EDIÇÃO EM LOTE
-  // =========================
-
   const [mostrarLote, setMostrarLote] = useState(false);
 
-  const [inicioLote, setInicioLote] = useState<Date | null>(null);
-  const [fimLote, setFimLote] = useState<Date | null>(null);
+  const [mostrarExcluidos, setMostrarExcluidos] =
+    useState(false);
 
-  const [cursoFiltroLote, setCursoFiltroLote] = useState("");
+  // =========================
+  // DOWNLOAD
+  // =========================
+
+  const [inicioDownload, setInicioDownload] =
+    useState<Date | null>(null);
+
+  const [fimDownload, setFimDownload] =
+    useState<Date | null>(null);
+
+  const [cidadeDownload, setCidadeDownload] =
+    useState("TODAS");
+
+  // =========================
+  // LOTE
+  // =========================
+
+  const [inicioLote, setInicioLote] =
+    useState<Date | null>(null);
+
+  const [fimLote, setFimLote] =
+    useState<Date | null>(null);
+
+  const [cursoFiltroLote, setCursoFiltroLote] =
+    useState("");
 
   const [novaTurma, setNovaTurma] = useState("");
-  const [novaTurmaIngles, setNovaTurmaIngles] = useState("");
+
+  const [novaTurmaIngles, setNovaTurmaIngles] =
+    useState("");
 
   // =========================
   // LOGIN
@@ -105,7 +122,8 @@ export default function GerenciamentoPage() {
 
   useEffect(() => {
     async function verificarLogin() {
-      const { data } = await supabase.auth.getSession();
+      const { data } =
+        await supabase.auth.getSession();
 
       if (!data.session) {
         router.push("/login");
@@ -139,15 +157,19 @@ export default function GerenciamentoPage() {
           .range(inicio, inicio + tamanho - 1);
 
         if (error) {
-          console.error("Erro Supabase:", error);
+          console.error(error);
           break;
         }
 
-        if (!data || data.length === 0) break;
+        if (!data || data.length === 0) {
+          break;
+        }
 
         todos = [...todos, ...data];
 
-        if (data.length < tamanho) break;
+        if (data.length < tamanho) {
+          break;
+        }
 
         inicio += tamanho;
       }
@@ -163,7 +185,7 @@ export default function GerenciamentoPage() {
   }, [carregandoLogin]);
 
   // =========================
-  // FILTRO
+  // FILTRADOS
   // =========================
 
   const filtrados = useMemo(() => {
@@ -171,7 +193,8 @@ export default function GerenciamentoPage() {
 
     return alunos
       .filter((a) => {
-        const excluido = a["Excluido"] === true;
+        const excluido =
+          a["Excluido"] === true;
 
         if (mostrarExcluidos) {
           if (!excluido) return false;
@@ -182,7 +205,9 @@ export default function GerenciamentoPage() {
         if (!termo) return true;
 
         return Object.values(a).some((valor) =>
-          String(valor || "").toLowerCase().includes(termo)
+          String(valor || "")
+            .toLowerCase()
+            .includes(termo)
         );
       })
       .sort(ordenarAlunos);
@@ -193,17 +218,24 @@ export default function GerenciamentoPage() {
   // =========================
 
   const cursosDisponiveisLote = useMemo(() => {
-    if (!inicioLote || !fimLote) return [];
+    if (!inicioLote) return [];
 
     const inicio = new Date(inicioLote);
+
     inicio.setHours(0, 0, 0, 0);
 
-    const fim = new Date(fimLote);
+    const fim = fimLote
+      ? new Date(fimLote)
+      : new Date(inicioLote);
+
     fim.setHours(23, 59, 59, 999);
 
     const cursos = alunos
       .filter((a) => {
-        const dataAluno = converterDataBR(a["Data Cadastro"]);
+        const dataAluno =
+          converterDataBR(
+            a["Data Cadastro"]
+          );
 
         return (
           dataAluno >= inicio.getTime() &&
@@ -211,11 +243,13 @@ export default function GerenciamentoPage() {
           a["Excluido"] !== true
         );
       })
-      .map((a) => String(a["Curso"] || "").trim())
+      .map((a) =>
+        String(a["Curso"] || "").trim()
+      )
       .filter(Boolean);
 
-    return Array.from(new Set(cursos)).sort((a, b) =>
-      a.localeCompare(b, "pt-BR")
+    return Array.from(new Set(cursos)).sort(
+      (a, b) => a.localeCompare(b, "pt-BR")
     );
   }, [alunos, inicioLote, fimLote]);
 
@@ -224,68 +258,90 @@ export default function GerenciamentoPage() {
   // =========================
 
   const alunosLote = useMemo(() => {
-    if (!inicioLote || !fimLote || !cursoFiltroLote) return [];
+    if (!inicioLote) return [];
 
     const inicio = new Date(inicioLote);
+
     inicio.setHours(0, 0, 0, 0);
 
-    const fim = new Date(fimLote);
+    const fim = fimLote
+      ? new Date(fimLote)
+      : new Date(inicioLote);
+
     fim.setHours(23, 59, 59, 999);
 
     return alunos.filter((a) => {
-      const dataAluno = converterDataBR(a["Data Cadastro"]);
+      const dataAluno =
+        converterDataBR(
+          a["Data Cadastro"]
+        );
+
+      const curso = String(
+        a["Curso"] || ""
+      ).trim();
 
       return (
         dataAluno >= inicio.getTime() &&
         dataAluno <= fim.getTime() &&
-        String(a["Curso"] || "").trim() === cursoFiltroLote &&
+        cursoFiltroLote &&
+        curso === cursoFiltroLote &&
         a["Excluido"] !== true
       );
     });
-  }, [alunos, inicioLote, fimLote, cursoFiltroLote]);
+  }, [
+    alunos,
+    inicioLote,
+    fimLote,
+    cursoFiltroLote,
+  ]);
 
   // =========================
-  // EDIÇÃO LOTE
+  // DOWNLOAD CIDADES
   // =========================
 
-  async function aplicarEdicaoLote() {
-    if (alunosLote.length === 0) {
-      alert("Nenhum aluno encontrado.");
-      return;
-    }
+  const cidadesDisponiveisDownload =
+    useMemo(() => {
+      if (!inicioDownload) return [];
 
-    const updates = alunosLote.map((aluno) =>
-      supabase
-        .from("backup alunos")
-        .update({
-          TURMA: novaTurma || aluno["TURMA"],
-          "TURMA INGLÊS":
-            novaTurmaIngles || aluno["TURMA INGLÊS"],
+      const inicio = new Date(inicioDownload);
+
+      inicio.setHours(0, 0, 0, 0);
+
+      const fim = fimDownload
+        ? new Date(fimDownload)
+        : new Date(inicioDownload);
+
+      fim.setHours(23, 59, 59, 999);
+
+      const cidades = alunos
+        .filter((a) => {
+          const dataAluno =
+            converterDataBR(
+              a["Data Cadastro"]
+            );
+
+          return (
+            dataAluno >=
+              inicio.getTime() &&
+            dataAluno <= fim.getTime() &&
+            a["Excluido"] !== true
+          );
         })
-        .eq("ID", aluno["ID"])
-    );
+        .map((a) =>
+          String(a["Cidade"] || "").trim()
+        )
+        .filter(Boolean);
 
-    await Promise.all(updates);
-
-    setAlunos((prev) =>
-      prev.map((a) => {
-        const existe = alunosLote.find(
-          (x) => x["ID"] === a["ID"]
-        );
-
-        if (!existe) return a;
-
-        return {
-          ...a,
-          TURMA: novaTurma || a["TURMA"],
-          "TURMA INGLÊS":
-            novaTurmaIngles || a["TURMA INGLÊS"],
-        };
-      })
-    );
-
-    alert("Edição em lote concluída.");
-  }
+      return Array.from(
+        new Set(cidades)
+      ).sort((a, b) =>
+        a.localeCompare(b, "pt-BR")
+      );
+    }, [
+      alunos,
+      inicioDownload,
+      fimDownload,
+    ]);
 
   // =========================
   // SAIR
@@ -307,7 +363,9 @@ export default function GerenciamentoPage() {
       return;
     }
 
-    const inicio = new Date(inicioDownload);
+    const inicio = new Date(
+      inicioDownload
+    );
 
     inicio.setHours(0, 0, 0, 0);
 
@@ -317,36 +375,116 @@ export default function GerenciamentoPage() {
 
     fim.setHours(23, 59, 59, 999);
 
-    let alunosDaData = alunos.filter((a) => {
-      const dataAluno = converterDataBR(a["Data Cadastro"]);
+    let alunosDaData = alunos
+      .filter((a) => {
+        const dataAluno =
+          converterDataBR(
+            a["Data Cadastro"]
+          );
 
-      return (
-        dataAluno >= inicio.getTime() &&
-        dataAluno <= fim.getTime() &&
-        a["Excluido"] !== true
-      );
-    });
+        return (
+          dataAluno >=
+            inicio.getTime() &&
+          dataAluno <= fim.getTime() &&
+          a["Excluido"] !== true
+        );
+      })
+      .sort(ordenarAlunos);
 
     if (cidadeDownload !== "TODAS") {
       alunosDaData = alunosDaData.filter(
         (a) =>
-          String(a["Cidade"] || "").trim() ===
-          cidadeDownload
+          String(
+            a["Cidade"] || ""
+          ).trim() === cidadeDownload
       );
     }
 
     if (alunosDaData.length === 0) {
-      alert("Nenhum aluno encontrado.");
+      alert(
+        "Nenhum aluno encontrado."
+      );
       return;
     }
 
-    const ws = XLSX.utils.json_to_sheet(alunosDaData);
+    const ws =
+      XLSX.utils.json_to_sheet(
+        alunosDaData
+      );
 
     const wb = XLSX.utils.book_new();
 
-    XLSX.utils.book_append_sheet(wb, ws, "Alunos");
+    XLSX.utils.book_append_sheet(
+      wb,
+      ws,
+      "Alunos"
+    );
 
-    XLSX.writeFile(wb, "ALUNOS.xlsx");
+    XLSX.writeFile(
+      wb,
+      "ALUNOS.xlsx"
+    );
+  }
+
+  // =========================
+  // LOTE
+  // =========================
+
+  async function aplicarEdicaoLote() {
+    if (alunosLote.length === 0) {
+      alert(
+        "Nenhum aluno encontrado."
+      );
+      return;
+    }
+
+    const updates = alunosLote.map(
+      (aluno) =>
+        supabase
+          .from("backup alunos")
+          .update({
+            TURMA:
+              novaTurma ||
+              aluno["TURMA"],
+
+            "TURMA INGLÊS":
+              novaTurmaIngles ||
+              aluno[
+                "TURMA INGLÊS"
+              ],
+          })
+          .eq("ID", aluno["ID"])
+    );
+
+    await Promise.all(updates);
+
+    setAlunos((prev) =>
+      prev.map((a) => {
+        const existe =
+          alunosLote.find(
+            (x) =>
+              x["ID"] === a["ID"]
+          );
+
+        if (!existe) return a;
+
+        return {
+          ...a,
+
+          TURMA:
+            novaTurma ||
+            a["TURMA"],
+
+          "TURMA INGLÊS":
+            novaTurmaIngles ||
+            a["TURMA INGLÊS"],
+        };
+      })
+    );
+
+    alert(
+      "Edição em lote concluída."
+    );
   }
 
   // =========================
@@ -375,19 +513,39 @@ export default function GerenciamentoPage() {
       <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
 
         {[
-          ["📑 CADASTRO", "/cadastro"],
-          ["🖥️ GERENCIAMENTO", "/gerenciamento"],
-          ["📊 RELATÓRIOS", "/relatorios"],
-          ["📤 SUBIR ALUNOS", "/subir-alunos"],
-          ["📤 SUBIR ALUNOS DE INGLÊS", "/subir-alunos-ingles"],
-          ["📇 CRIAR CONTATOS", "/criar-contatos"],
+          [
+            "📑 CADASTRO",
+            "/cadastro",
+          ],
+          [
+            "🖥️ GERENCIAMENTO",
+            "/gerenciamento",
+          ],
+          [
+            "📊 RELATÓRIOS",
+            "/relatorios",
+          ],
+          [
+            "📤 SUBIR ALUNOS",
+            "/subir-alunos",
+          ],
+          [
+            "📤 SUBIR ALUNOS DE INGLÊS",
+            "/subir-alunos-ingles",
+          ],
+          [
+            "📇 CRIAR CONTATOS",
+            "/criar-contatos",
+          ],
         ].map(([tab, href]) => (
           <a
             key={tab}
             href={href}
             className={`shrink-0 rounded-md border px-5 py-2 text-xs font-bold md:py-1 ${
-              tab.includes("GERENCIAMENTO")
-                ? "border-cyan-300 bg-cyan-300 text-black"
+              tab.includes(
+                "GERENCIAMENTO"
+              )
+                ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_0_10px_rgba(0,242,255,.6)]"
                 : "border-slate-700/30 bg-white/20 text-[#1f295a]"
             }`}
           >
@@ -404,6 +562,8 @@ export default function GerenciamentoPage() {
 
       </div>
 
+      {/* CONTEÚDO */}
+
       <section className="px-4 pt-20 md:px-8 md:pt-14">
 
         {/* TOPO */}
@@ -413,7 +573,9 @@ export default function GerenciamentoPage() {
           <div>
 
             <h1 className="text-lg font-black text-white">
-              ▣ LISTAGEM DE ALUNOS
+              {mostrarExcluidos
+                ? "♻ ALUNOS EXCLUÍDOS"
+                : "▣ LISTAGEM DE ALUNOS"}
             </h1>
 
             <p className="text-xs text-cyan-300">
@@ -422,27 +584,34 @@ export default function GerenciamentoPage() {
 
           </div>
 
-          <div className="flex w-full flex-col gap-3 lg:w-[900px] lg:flex-row lg:items-center">
+          <div className="flex w-full flex-col gap-3 lg:w-[1000px] lg:flex-row lg:items-center">
 
             <input
               value={pesquisa}
               onChange={(e) =>
-                setPesquisa(e.target.value)
+                setPesquisa(
+                  e.target.value
+                )
               }
               placeholder="Pesquisar..."
               className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
             />
 
             <button
-              onClick={() => setPesquisa("")}
+              onClick={() =>
+                setPesquisa("")
+              }
               className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-cyan-100"
             >
               LIMPAR
             </button>
 
             <button
+              type="button"
               onClick={() =>
-                setMostrarDownload((prev) => !prev)
+                setMostrarDownload(
+                  (prev) => !prev
+                )
               }
               className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white"
             >
@@ -450,23 +619,225 @@ export default function GerenciamentoPage() {
             </button>
 
             <button
+              type="button"
               onClick={() =>
-                setMostrarLote((prev) => !prev)
+                setMostrarLote(
+                  (prev) => !prev
+                )
               }
               className="rounded-md bg-purple-700 px-4 py-2 text-xs font-black text-white"
             >
               EDIÇÃO EM LOTE
             </button>
 
+            <button
+              onClick={() => {
+                setMostrarExcluidos(
+                  (prev) => !prev
+                );
+
+                setPesquisa("");
+              }}
+              className={`rounded-md px-4 py-2 text-xs font-black ${
+                mostrarExcluidos
+                  ? "bg-cyan-400 text-black"
+                  : "bg-red-700 text-white"
+              }`}
+            >
+              {mostrarExcluidos
+                ? "VER ATIVOS"
+                : "VER EXCLUÍDOS"}
+            </button>
+
           </div>
 
         </div>
+
+        {/* DOWNLOAD */}
+
+        {mostrarDownload && (
+          <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4">
+
+            <div className="mb-3 text-xs font-black uppercase text-cyan-300">
+              Download de alunos
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+
+              <DatePicker
+                selectsRange
+                startDate={inicioDownload}
+                endDate={fimDownload}
+                onChange={(update: any) => {
+                  if (!update) {
+                    setInicioDownload(null);
+                    setFimDownload(null);
+                    return;
+                  }
+
+                  const [inicio, fim] =
+                    update;
+
+                  setInicioDownload(
+                    inicio
+                  );
+
+                  setFimDownload(
+                    fim || inicio
+                  );
+                }}
+                isClearable
+                dateFormat="dd/MM/yyyy"
+                placeholderText="Selecione um dia ou intervalo"
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
+              />
+
+              <select
+                value={cidadeDownload}
+                onChange={(e) =>
+                  setCidadeDownload(
+                    e.target.value
+                  )
+                }
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
+              >
+                <option value="TODAS">
+                  Todas as cidades
+                </option>
+
+                {cidadesDisponiveisDownload.map(
+                  (cidade) => (
+                    <option
+                      key={cidade}
+                      value={cidade}
+                    >
+                      {cidade}
+                    </option>
+                  )
+                )}
+
+              </select>
+
+              <button
+                onClick={
+                  baixarAlunosPorData
+                }
+                className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white"
+              >
+                BAIXAR EXCEL
+              </button>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* EDIÇÃO EM LOTE */}
+
+        {mostrarLote && (
+          <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4">
+
+            <div className="mb-3 text-xs font-black uppercase text-cyan-300">
+              Edição em lote
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+
+              <DatePicker
+                selectsRange
+                startDate={inicioLote}
+                endDate={fimLote}
+                onChange={(update: any) => {
+                  if (!update) {
+                    setInicioLote(null);
+                    setFimLote(null);
+                    return;
+                  }
+
+                  const [inicio, fim] =
+                    update;
+
+                  setInicioLote(
+                    inicio
+                  );
+
+                  setFimLote(
+                    fim || inicio
+                  );
+                }}
+                isClearable
+                dateFormat="dd/MM/yyyy"
+                placeholderText="Selecione um dia ou intervalo"
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
+              />
+
+              <select
+                value={cursoFiltroLote}
+                onChange={(e) =>
+                  setCursoFiltroLote(
+                    e.target.value
+                  )
+                }
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
+              >
+                <option value="">
+                  Selecione o curso
+                </option>
+
+                {cursosDisponiveisLote.map(
+                  (curso) => (
+                    <option
+                      key={curso}
+                      value={curso}
+                    >
+                      {curso}
+                    </option>
+                  )
+                )}
+              </select>
+
+              <input
+                value={novaTurma}
+                onChange={(e) =>
+                  setNovaTurma(
+                    e.target.value
+                  )
+                }
+                placeholder="Nova TURMA"
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
+              />
+
+              <input
+                value={novaTurmaIngles}
+                onChange={(e) =>
+                  setNovaTurmaIngles(
+                    e.target.value
+                  )
+                }
+                placeholder="Nova TURMA INGLÊS"
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
+              />
+
+              <button
+                onClick={
+                  aplicarEdicaoLote
+                }
+                className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white"
+              >
+                APLICAR EM{" "}
+                {alunosLote.length}
+              </button>
+
+            </div>
+
+          </div>
+        )}
 
         {/* TABELA */}
 
         <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
 
-          <div className="min-w-[1450px]">
+          <div className="min-w-[1500px]">
 
             <div className="grid grid-cols-[110px_120px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
 
@@ -475,7 +846,7 @@ export default function GerenciamentoPage() {
               </div>
 
               <div className="border-r border-[#12375f] p-3">
-                DATA CADASTRO
+                DATA
               </div>
 
               <div className="border-r border-[#12375f] p-3">
@@ -528,58 +899,80 @@ export default function GerenciamentoPage() {
                 >
 
                   <button
-                    onClick={async (e) => {
+                    onClick={async (
+                      e
+                    ) => {
                       e.preventDefault();
+
                       e.stopPropagation();
 
                       const statusAtual =
-                        aluno["STATUS"] || "ATIVO";
+                        aluno[
+                          "STATUS"
+                        ] || "ATIVO";
 
                       const novoStatus =
-                        statusAtual === "ATIVO"
+                        statusAtual ===
+                        "ATIVO"
                           ? "CANCELADO"
                           : "ATIVO";
 
-                      const { error } = await supabase
-                        .from("backup alunos")
-                        .update({
-                          STATUS: novoStatus,
-                        })
-                        .eq("ID", aluno["ID"]);
-
-                      if (error) {
-                        alert("Erro ao atualizar status.");
-                        return;
-                      }
-
-                      setAlunos((prev) =>
-                        prev.map((a) =>
-                          a["ID"] === aluno["ID"]
-                            ? {
-                                ...a,
-                                STATUS: novoStatus,
-                              }
-                            : a
+                      await supabase
+                        .from(
+                          "backup alunos"
                         )
+                        .update({
+                          STATUS:
+                            novoStatus,
+                        })
+                        .eq(
+                          "ID",
+                          aluno["ID"]
+                        );
+
+                      setAlunos(
+                        (prev) =>
+                          prev.map(
+                            (a) =>
+                              a[
+                                "ID"
+                              ] ===
+                              aluno[
+                                "ID"
+                              ]
+                                ? {
+                                    ...a,
+                                    STATUS:
+                                      novoStatus,
+                                  }
+                                : a
+                          )
                       );
                     }}
                     className={`min-w-[90px] rounded-md px-3 py-1 text-[10px] font-black ${
-                      aluno["STATUS"] === "CANCELADO"
+                      aluno[
+                        "STATUS"
+                      ] ===
+                      "CANCELADO"
                         ? "bg-red-600 text-white"
                         : "bg-green-600 text-white"
                     }`}
                   >
-                    {aluno["STATUS"] || "ATIVO"}
+                    {aluno["STATUS"] ||
+                      "ATIVO"}
                   </button>
 
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
-                  {aluno["Data Cadastro"] || "-"}
+                  {aluno[
+                    "Data Cadastro"
+                  ] || "-"}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["TURMA"] || "-"}
+                  {aluno["TURMA"] ||
+                    "-"}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
@@ -591,19 +984,25 @@ export default function GerenciamentoPage() {
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
-                  {aluno["Cidade"] || "-"}
+                  {aluno["Cidade"] ||
+                    "-"}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {formatarTelefone(aluno["Tel. Resp"])}
+                  {formatarTelefone(
+                    aluno["Tel. Resp"]
+                  )}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {formatarTelefone(aluno["Tel. Aluno"])}
+                  {formatarTelefone(
+                    aluno["Tel. Aluno"]
+                  )}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["Curso"] || "-"}
+                  {aluno["Curso"] ||
+                    "-"}
                 </div>
 
                 <div className="flex items-center justify-center p-3">
