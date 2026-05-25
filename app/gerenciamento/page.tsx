@@ -4,43 +4,81 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx-js-style";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 function converterDataBR(data?: string) {
   if (!data) return 0;
+
   const partes = String(data).split("/");
+
   if (partes.length !== 3) return 0;
+
   const [dia, mes, ano] = partes;
+
   return new Date(`${ano}-${mes}-${dia}`).getTime();
 }
 
 function isoParaBR(dataISO: string) {
   if (!dataISO) return "";
+
   const [ano, mes, dia] = dataISO.split("-");
+
   return `${dia}/${mes}/${ano}`;
 }
 
 function ordenarAlunos(a: any, b: any) {
   const ordemA = Number(a["Ordem"] || 0);
   const ordemB = Number(b["Ordem"] || 0);
+
   if (ordemA !== ordemB) return ordemB - ordemA;
 
   const dataA = converterDataBR(a["Data Cadastro"]);
   const dataB = converterDataBR(b["Data Cadastro"]);
+
   if (dataA !== dataB) return dataB - dataA;
 
   return Number(b["ID"] || 0) - Number(a["ID"] || 0);
 }
 
+function formatarTelefone(valor: any) {
+  if (valor === null || valor === undefined) return "-";
+
+  let texto = String(valor).trim();
+
+  if (!texto || texto.toLowerCase() === "null") {
+    return "-";
+  }
+
+  if (/e\+/i.test(texto)) {
+    const numero = Number(texto.replace(",", "."));
+
+    if (!Number.isNaN(numero)) {
+      texto = numero.toFixed(0);
+    }
+  }
+
+  return texto;
+}
+
 export default function GerenciamentoPage() {
   const router = useRouter();
+
   const [carregandoLogin, setCarregandoLogin] = useState(true);
 
   const [alunos, setAlunos] = useState<any[]>([]);
   const [pesquisa, setPesquisa] = useState("");
+
   const [mostrarDownload, setMostrarDownload] = useState(false);
-  const [dataInicioDownload, setDataInicioDownload] = useState("");
-  const [dataFimDownload, setDataFimDownload] = useState("");
+
+  const [intervaloDownload, setIntervaloDownload] = useState<
+    [Date | null, Date | null]
+  >([null, null]);
+
+  const [inicioDownload, fimDownload] = intervaloDownload;
+
   const [cidadeDownload, setCidadeDownload] = useState("TODAS");
+
   const [mostrarExcluidos, setMostrarExcluidos] = useState(false);
 
   useEffect(() => {
@@ -63,7 +101,9 @@ export default function GerenciamentoPage() {
 
     async function buscarTodosAlunos() {
       let todos: any[] = [];
+
       let inicio = 0;
+
       const tamanho = 1000;
 
       while (true) {
@@ -119,20 +159,25 @@ export default function GerenciamentoPage() {
   }, [alunos, pesquisa, mostrarExcluidos]);
 
   const cidadesDisponiveisDownload = useMemo(() => {
-    if (!dataInicioDownload || !dataFimDownload) return [];
+    if (!inicioDownload) return [];
 
-    const inicio = new Date(`${dataInicioDownload}T00:00:00`).getTime();
-    const fim = new Date(`${dataFimDownload}T23:59:59`).getTime();
+    const inicio = new Date(inicioDownload);
 
-    if (inicio > fim) return [];
+    inicio.setHours(0, 0, 0, 0);
+
+    const fim = fimDownload
+      ? new Date(fimDownload)
+      : new Date(inicioDownload);
+
+    fim.setHours(23, 59, 59, 999);
 
     const cidades = alunos
       .filter((a) => {
         const dataAluno = converterDataBR(a["Data Cadastro"]);
 
         return (
-          dataAluno >= inicio &&
-          dataAluno <= fim &&
+          dataAluno >= inicio.getTime() &&
+          dataAluno <= fim.getTime() &&
           a["Excluido"] !== true
         );
       })
@@ -142,37 +187,41 @@ export default function GerenciamentoPage() {
     return Array.from(new Set(cidades)).sort((a, b) =>
       a.localeCompare(b, "pt-BR")
     );
-  }, [alunos, dataInicioDownload, dataFimDownload]);
+  }, [alunos, inicioDownload, fimDownload]);
 
   async function sair() {
     await supabase.auth.signOut();
+
     router.push("/login");
   }
 
   function baixarAlunosPorData() {
-    if (!dataInicioDownload || !dataFimDownload) {
-      alert("Selecione a data inicial e a data final.");
+    if (!inicioDownload) {
+      alert("Selecione uma data.");
       return;
     }
 
-    const inicio = new Date(`${dataInicioDownload}T00:00:00`).getTime();
-    const fim = new Date(`${dataFimDownload}T23:59:59`).getTime();
+    const inicio = new Date(inicioDownload);
 
-    if (inicio > fim) {
-      alert("A data inicial não pode ser maior que a data final.");
-      return;
-    }
+    inicio.setHours(0, 0, 0, 0);
 
-    const dataInicioBR = isoParaBR(dataInicioDownload);
-    const dataFimBR = isoParaBR(dataFimDownload);
+    const fim = fimDownload
+      ? new Date(fimDownload)
+      : new Date(inicioDownload);
+
+    fim.setHours(23, 59, 59, 999);
+
+    const dataInicioBR = inicio.toLocaleDateString("pt-BR");
+
+    const dataFimBR = fim.toLocaleDateString("pt-BR");
 
     let alunosDaData = alunos
       .filter((a) => {
         const dataAluno = converterDataBR(a["Data Cadastro"]);
 
         return (
-          dataAluno >= inicio &&
-          dataAluno <= fim &&
+          dataAluno >= inicio.getTime() &&
+          dataAluno <= fim.getTime() &&
           a["Excluido"] !== true
         );
       })
@@ -238,7 +287,8 @@ export default function GerenciamentoPage() {
       if (coluna === "Vendedor") return { wch: 25 };
       if (coluna === "CPF") return { wch: 18 };
       if (coluna.includes("Data")) return { wch: 18 };
-      if (coluna.includes("Tel")) return { wch: 18 };
+      if (coluna.includes("Tel")) return { wch: 22 };
+
       return { wch: 16 };
     });
 
@@ -247,9 +297,16 @@ export default function GerenciamentoPage() {
 
       if (ws[celula]) {
         ws[celula].s = {
-          font: { bold: true, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "0C2743" } },
-          alignment: { horizontal: "center" },
+          font: {
+            bold: true,
+            color: { rgb: "FFFFFF" },
+          },
+          fill: {
+            fgColor: { rgb: "0C2743" },
+          },
+          alignment: {
+            horizontal: "center",
+          },
         };
       }
     });
@@ -259,8 +316,12 @@ export default function GerenciamentoPage() {
 
       if (curso.includes("TECNOLOGIA")) {
         const linhaExcel = index + 2;
+
         const colunaCurso = colunas.indexOf("Curso");
-        const celulaCurso = `${XLSX.utils.encode_col(colunaCurso)}${linhaExcel}`;
+
+        const celulaCurso = `${XLSX.utils.encode_col(
+          colunaCurso
+        )}${linhaExcel}`;
 
         if (ws[celulaCurso]) {
           ws[celulaCurso].s = {
@@ -274,6 +335,7 @@ export default function GerenciamentoPage() {
     });
 
     const wb = XLSX.utils.book_new();
+
     XLSX.utils.book_append_sheet(wb, ws, "Alunos");
 
     const cidadeNome =
@@ -283,7 +345,10 @@ export default function GerenciamentoPage() {
 
     XLSX.writeFile(
       wb,
-      `ALUNOS_${dataInicioBR.replaceAll("/", "-")}_A_${dataFimBR.replaceAll("/", "-")}_${cidadeNome}.xlsx`
+      `ALUNOS_${dataInicioBR.replaceAll(
+        "/",
+        "-"
+      )}_A_${dataFimBR.replaceAll("/", "-")}_${cidadeNome}.xlsx`
     );
   }
 
@@ -331,7 +396,9 @@ export default function GerenciamentoPage() {
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-lg font-black text-white">
-              {mostrarExcluidos ? "♻ ALUNOS EXCLUÍDOS" : "▣ LISTAGEM DE ALUNOS"}
+              {mostrarExcluidos
+                ? "♻ ALUNOS EXCLUÍDOS"
+                : "▣ LISTAGEM DE ALUNOS"}
             </h1>
 
             <p className="text-xs text-cyan-300">
@@ -372,7 +439,9 @@ export default function GerenciamentoPage() {
                   : "bg-red-700 text-white hover:bg-red-600"
               }`}
             >
-              {mostrarExcluidos ? "VER ALUNOS ATIVOS" : "VER EXCLUÍDOS"}
+              {mostrarExcluidos
+                ? "VER ALUNOS ATIVOS"
+                : "VER EXCLUÍDOS"}
             </button>
           </div>
         </div>
@@ -386,30 +455,20 @@ export default function GerenciamentoPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase text-cyan-300">
-                  Data inicial
+                  Selecionar período
                 </label>
-                <input
-                  type="date"
-                  value={dataInicioDownload}
-                  onChange={(e) => {
-                    setDataInicioDownload(e.target.value);
-                    setCidadeDownload("TODAS");
-                  }}
-                  className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
-                />
-              </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-cyan-300">
-                  Data final
-                </label>
-                <input
-                  type="date"
-                  value={dataFimDownload}
-                  onChange={(e) => {
-                    setDataFimDownload(e.target.value);
+                <DatePicker
+                  selectsRange
+                  startDate={inicioDownload}
+                  endDate={fimDownload}
+                  onChange={(update: any) => {
+                    setIntervaloDownload(update);
                     setCidadeDownload("TODAS");
                   }}
+                  isClearable
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Selecione o intervalo"
                   className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
                 />
               </div>
@@ -420,6 +479,7 @@ export default function GerenciamentoPage() {
                 className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
               >
                 <option value="TODAS">Todas as cidades</option>
+
                 {cidadesDisponiveisDownload.map((cidade) => (
                   <option key={cidade} value={cidade}>
                     {cidade}
@@ -441,13 +501,25 @@ export default function GerenciamentoPage() {
           <div className="min-w-[1200px]">
             <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
               <div className="border-r border-[#12375f] p-3">Status</div>
-              <div className="border-r border-[#12375f] p-3">Data cadastro</div>
-              <div className="border-r border-[#12375f] p-3">ID do aluno</div>
-              <div className="border-r border-[#12375f] p-3">Nome completo</div>
+              <div className="border-r border-[#12375f] p-3">
+                Data cadastro
+              </div>
+              <div className="border-r border-[#12375f] p-3">
+                ID do aluno
+              </div>
+              <div className="border-r border-[#12375f] p-3">
+                Nome completo
+              </div>
               <div className="border-r border-[#12375f] p-3">Cidade</div>
-              <div className="border-r border-[#12375f] p-3">Tel. responsável</div>
-              <div className="border-r border-[#12375f] p-3">Tel. aluno</div>
-              <div className="border-r border-[#12375f] p-3">Curso contratado</div>
+              <div className="border-r border-[#12375f] p-3">
+                Tel. responsável
+              </div>
+              <div className="border-r border-[#12375f] p-3">
+                Tel. aluno
+              </div>
+              <div className="border-r border-[#12375f] p-3">
+                Curso contratado
+              </div>
               <div className="p-3 text-center">Ações</div>
             </div>
 
@@ -467,7 +539,9 @@ export default function GerenciamentoPage() {
                         : "bg-green-950 text-green-300"
                     }`}
                   >
-                    {aluno["Excluido"] === true ? "EXCLUÍDO" : aluno["STATUS"] || "ATIVO"}
+                    {aluno["Excluido"] === true
+                      ? "EXCLUÍDO"
+                      : aluno["STATUS"] || "ATIVO"}
                   </span>
                 </div>
 
@@ -488,11 +562,11 @@ export default function GerenciamentoPage() {
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["Tel. Resp"] || "-"}
+                  {formatarTelefone(aluno["Tel. Resp"])}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["Tel. Aluno"] || "-"}
+                  {formatarTelefone(aluno["Tel. Aluno"])}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
