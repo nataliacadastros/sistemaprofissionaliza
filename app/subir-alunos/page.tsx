@@ -82,6 +82,7 @@ function montarMapaCidades(linhas: any[]) {
   linhas.forEach((linha) => {
     const nome =
       pegarValorPorPossiveisColunas(linha, [
+        "NOME DA CIDADE",
         "CIDADE",
         "NOME",
         "NOME CIDADE",
@@ -92,8 +93,8 @@ function montarMapaCidades(linhas: any[]) {
 
     const uf =
       pegarValorPorPossiveisColunas(linha, [
-        "UF",
         "ESTADO",
+        "UF",
         "SIGLA",
         "SIGLA UF",
         "SIGLA_UF",
@@ -101,16 +102,16 @@ function montarMapaCidades(linhas: any[]) {
 
     const codigo =
       pegarValorPorPossiveisColunas(linha, [
-        "CODIGO",
         "CÓDIGO",
+        "CODIGO",
         "COD",
-        "ID",
+        "COD CIDADE",
+        "CODIGO CIDADE",
+        "CÓDIGO CIDADE",
+        "CODIGO_CIDADE",
         "IBGE",
         "CODIGO IBGE",
         "CÓDIGO IBGE",
-        "CODIGO_CIDADE",
-        "CÓDIGO CIDADE",
-        "COD CIDADE",
       ]) || "";
 
     const chave = normalizarCidade(nome);
@@ -120,7 +121,7 @@ function montarMapaCidades(linhas: any[]) {
     if (!mapa[chave]) mapa[chave] = [];
 
     const jaExiste = mapa[chave].some(
-      (opcao) => opcao.codigo === codigo && opcao.uf === uf
+      (opcao) => opcao.codigo === codigo && opcao.uf === limparValor(uf).toUpperCase()
     );
 
     if (!jaExiste) {
@@ -223,9 +224,7 @@ export default function SubirAlunosPage() {
         const response = await fetch("/cidades.xlsx");
 
         if (!response.ok) {
-          setErroMapaCidades(
-            "Arquivo cidades.xlsx não encontrado em /public/cidades.xlsx"
-          );
+          setErroMapaCidades("Arquivo cidades.xlsx não encontrado em /public/cidades.xlsx");
           return;
         }
 
@@ -239,10 +238,7 @@ export default function SubirAlunosPage() {
         }
 
         const sheet = workbook.Sheets[primeiraAba];
-        const linhas: any[] = XLSX.utils.sheet_to_json(sheet, {
-          defval: "",
-        });
-
+        const linhas: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
         const mapa = montarMapaCidades(linhas);
 
         setMapaCidades(mapa);
@@ -335,6 +331,7 @@ export default function SubirAlunosPage() {
       },
     });
   }
+
 
   function resolverCidadeParaCity2(cidadeOriginal: any, pendencias: Record<string, PendenciaCidade>) {
     const cidadeLimpa = limparValor(cidadeOriginal).trim();
@@ -485,7 +482,6 @@ export default function SubirAlunosPage() {
 
   useEffect(() => {
     if (rawProcessado.length === 0) return;
-
     gerarDfFinal(rawProcessado);
   }, [escolhasCidade]);
   function selecionarCidadeDuplicada(chave: string, opcao: OpcaoCidade) {
@@ -556,6 +552,7 @@ export default function SubirAlunosPage() {
           ["📊 RELATÓRIOS", "/relatorios"],
           ["📤 SUBIR ALUNOS", "/subir-alunos"],
           ["📤 SUBIR ALUNOS DE INGLÊS", "/subir-alunos-ingles"],
+          ["📇 CRIAR CONTATOS", "/criar-contatos"],
         ].map(([tab, href]) => (
           <a
             key={tab}
