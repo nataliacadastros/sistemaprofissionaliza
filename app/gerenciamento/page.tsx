@@ -38,7 +38,8 @@ export default function GerenciamentoPage() {
   const [alunos, setAlunos] = useState<any[]>([]);
   const [pesquisa, setPesquisa] = useState("");
   const [mostrarDownload, setMostrarDownload] = useState(false);
-  const [dataDownload, setDataDownload] = useState("");
+  const [dataInicioDownload, setDataInicioDownload] = useState("");
+  const [dataFimDownload, setDataFimDownload] = useState("");
   const [cidadeDownload, setCidadeDownload] = useState("TODAS");
   const [mostrarExcluidos, setMostrarExcluidos] = useState(false);
 
@@ -118,23 +119,30 @@ export default function GerenciamentoPage() {
   }, [alunos, pesquisa, mostrarExcluidos]);
 
   const cidadesDisponiveisDownload = useMemo(() => {
-    if (!dataDownload) return [];
+    if (!dataInicioDownload || !dataFimDownload) return [];
 
-    const dataBR = isoParaBR(dataDownload);
+    const inicio = new Date(`${dataInicioDownload}T00:00:00`).getTime();
+    const fim = new Date(`${dataFimDownload}T23:59:59`).getTime();
+
+    if (inicio > fim) return [];
 
     const cidades = alunos
-      .filter(
-        (a) =>
-          String(a["Data Cadastro"] || "") === dataBR &&
+      .filter((a) => {
+        const dataAluno = converterDataBR(a["Data Cadastro"]);
+
+        return (
+          dataAluno >= inicio &&
+          dataAluno <= fim &&
           a["Excluido"] !== true
-      )
+        );
+      })
       .map((a) => String(a["Cidade"] || "").trim())
       .filter(Boolean);
 
     return Array.from(new Set(cidades)).sort((a, b) =>
       a.localeCompare(b, "pt-BR")
     );
-  }, [alunos, dataDownload]);
+  }, [alunos, dataInicioDownload, dataFimDownload]);
 
   async function sair() {
     await supabase.auth.signOut();
@@ -142,19 +150,32 @@ export default function GerenciamentoPage() {
   }
 
   function baixarAlunosPorData() {
-    if (!dataDownload) {
-      alert("Selecione uma data.");
+    if (!dataInicioDownload || !dataFimDownload) {
+      alert("Selecione a data inicial e a data final.");
       return;
     }
 
-    const dataBR = isoParaBR(dataDownload);
+    const inicio = new Date(`${dataInicioDownload}T00:00:00`).getTime();
+    const fim = new Date(`${dataFimDownload}T23:59:59`).getTime();
+
+    if (inicio > fim) {
+      alert("A data inicial não pode ser maior que a data final.");
+      return;
+    }
+
+    const dataInicioBR = isoParaBR(dataInicioDownload);
+    const dataFimBR = isoParaBR(dataFimDownload);
 
     let alunosDaData = alunos
-      .filter(
-        (a) =>
-          String(a["Data Cadastro"] || "") === dataBR &&
+      .filter((a) => {
+        const dataAluno = converterDataBR(a["Data Cadastro"]);
+
+        return (
+          dataAluno >= inicio &&
+          dataAluno <= fim &&
           a["Excluido"] !== true
-      )
+        );
+      })
       .sort(ordenarAlunos)
       .reverse();
 
@@ -165,7 +186,7 @@ export default function GerenciamentoPage() {
     }
 
     if (alunosDaData.length === 0) {
-      alert("Nenhum aluno encontrado nessa data/cidade.");
+      alert("Nenhum aluno encontrado nesse intervalo/cidade.");
       return;
     }
 
@@ -262,7 +283,7 @@ export default function GerenciamentoPage() {
 
     XLSX.writeFile(
       wb,
-      `ALUNOS_${dataBR.replaceAll("/", "-")}_${cidadeNome}.xlsx`
+      `ALUNOS_${dataInicioBR.replaceAll("/", "-")}_A_${dataFimBR.replaceAll("/", "-")}_${cidadeNome}.xlsx`
     );
   }
 
@@ -359,19 +380,39 @@ export default function GerenciamentoPage() {
         {mostrarDownload && (
           <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
             <div className="mb-2 text-xs font-black uppercase text-cyan-300">
-              Selecione a Data Cadastro para baixar
+              Selecione o intervalo de Data Cadastro para baixar
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <input
-                type="date"
-                value={dataDownload}
-                onChange={(e) => {
-                  setDataDownload(e.target.value);
-                  setCidadeDownload("TODAS");
-                }}
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
-              />
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black uppercase text-cyan-300">
+                  Data inicial
+                </label>
+                <input
+                  type="date"
+                  value={dataInicioDownload}
+                  onChange={(e) => {
+                    setDataInicioDownload(e.target.value);
+                    setCidadeDownload("TODAS");
+                  }}
+                  className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black uppercase text-cyan-300">
+                  Data final
+                </label>
+                <input
+                  type="date"
+                  value={dataFimDownload}
+                  onChange={(e) => {
+                    setDataFimDownload(e.target.value);
+                    setCidadeDownload("TODAS");
+                  }}
+                  className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
+                />
+              </div>
 
               <select
                 value={cidadeDownload}
