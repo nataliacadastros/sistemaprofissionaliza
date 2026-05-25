@@ -499,15 +499,31 @@ export default function SubirAlunosPage() {
     );
   }
 
-  function baixarCidade(cidade: string) {
+  function baixarCidade(cidadeCodigo: string) {
     if (!dfFinal) return;
 
-    const dadosCidade = dfFinal.filter((d) => d.city2 === cidade);
+    const dadosCidade = dfFinal.filter((d) => d.city2 === cidadeCodigo);
+
+    if (dadosCidade.length === 0) return;
+
+    const nomeCidadeArquivo =
+      rawProcessado.find((r) => {
+        const chave = normalizarCidade(r.City);
+        const opcoes = mapaCidades[chave] || [];
+
+        return opcoes.some((opcao) => opcao.codigo === cidadeCodigo);
+      })?.City || cidadeCodigo;
+
+    const nomeArquivo = limparValor(nomeCidadeArquivo)
+      .trim()
+      .toUpperCase()
+      .replace(/[\\/:*?"<>|]/g, "-");
+
     const ws = XLSX.utils.json_to_sheet(dadosCidade);
     const wb = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(wb, ws, "Alunos");
-    XLSX.writeFile(wb, `${cidade}.xlsx`);
+    XLSX.writeFile(wb, `${nomeArquivo}.xlsx`);
   }
 
   function limparTudo() {
