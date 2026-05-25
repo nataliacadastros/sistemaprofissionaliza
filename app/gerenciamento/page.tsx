@@ -245,7 +245,7 @@ export default function GerenciamentoPage() {
   }, [alunos, inicioLote, fimLote, cursoFiltroLote]);
 
   // =========================
-  // EDIÇÃO EM LOTE
+  // EDIÇÃO LOTE
   // =========================
 
   async function aplicarEdicaoLote() {
@@ -308,6 +308,7 @@ export default function GerenciamentoPage() {
     }
 
     const inicio = new Date(inicioDownload);
+
     inicio.setHours(0, 0, 0, 0);
 
     const fim = fimDownload
@@ -332,6 +333,11 @@ export default function GerenciamentoPage() {
           String(a["Cidade"] || "").trim() ===
           cidadeDownload
       );
+    }
+
+    if (alunosDaData.length === 0) {
+      alert("Nenhum aluno encontrado.");
+      return;
     }
 
     const ws = XLSX.utils.json_to_sheet(alunosDaData);
@@ -456,145 +462,162 @@ export default function GerenciamentoPage() {
 
         </div>
 
-        {/* DOWNLOAD */}
+        {/* TABELA */}
 
-        {mostrarDownload && (
-          <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
+        <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
 
-            <div className="mb-3 text-xs font-black uppercase text-cyan-300">
-              Baixar alunos
-            </div>
+          <div className="min-w-[1450px]">
 
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-[110px_120px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
 
-              <DatePicker
-                selectsRange
-                startDate={inicioDownload}
-                endDate={fimDownload}
-                onChange={(update: any) => {
-                  if (!update) {
-                    setIntervaloDownload([
-                      null,
-                      null,
-                    ]);
-                    return;
-                  }
+              <div className="border-r border-[#12375f] p-3">
+                STATUS
+              </div>
 
-                  const [inicio, fim] = update;
+              <div className="border-r border-[#12375f] p-3">
+                DATA CADASTRO
+              </div>
 
-                  setIntervaloDownload([
-                    inicio,
-                    fim || inicio,
-                  ]);
-                }}
-                isClearable
-                dateFormat="dd/MM/yyyy"
-                placeholderText="Selecione um dia ou intervalo"
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
-              />
+              <div className="border-r border-[#12375f] p-3">
+                TURMA
+              </div>
 
-              <select
-                value={cidadeDownload}
-                onChange={(e) =>
-                  setCidadeDownload(e.target.value)
-                }
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
-              >
-                <option value="TODAS">
-                  Todas as cidades
-                </option>
-              </select>
+              <div className="border-r border-[#12375f] p-3">
+                ID
+              </div>
 
-              <button
-                onClick={baixarAlunosPorData}
-                className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white"
-              >
-                📥 BAIXAR EXCEL
-              </button>
+              <div className="border-r border-[#12375f] p-3">
+                NOME
+              </div>
+
+              <div className="border-r border-[#12375f] p-3">
+                CIDADE
+              </div>
+
+              <div className="border-r border-[#12375f] p-3">
+                TEL. RESP
+              </div>
+
+              <div className="border-r border-[#12375f] p-3">
+                TEL. ALUNO
+              </div>
+
+              <div className="border-r border-[#12375f] p-3">
+                CURSO
+              </div>
+
+              <div className="p-3 text-center">
+                AÇÕES
+              </div>
 
             </div>
+
+            {filtrados.map((aluno) => (
+              <a
+                key={aluno["ID"]}
+                href={`/aluno/${aluno["ID"]}`}
+                className="grid min-h-[52px] grid-cols-[110px_120px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+              >
+
+                <div
+                  className="flex items-center border-r border-[#12375f] p-3"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+
+                      const statusAtual =
+                        aluno["STATUS"] || "ATIVO";
+
+                      const novoStatus =
+                        statusAtual === "ATIVO"
+                          ? "CANCELADO"
+                          : "ATIVO";
+
+                      const { error } = await supabase
+                        .from("backup alunos")
+                        .update({
+                          STATUS: novoStatus,
+                        })
+                        .eq("ID", aluno["ID"]);
+
+                      if (error) {
+                        alert("Erro ao atualizar status.");
+                        return;
+                      }
+
+                      setAlunos((prev) =>
+                        prev.map((a) =>
+                          a["ID"] === aluno["ID"]
+                            ? {
+                                ...a,
+                                STATUS: novoStatus,
+                              }
+                            : a
+                        )
+                      );
+                    }}
+                    className={`min-w-[90px] rounded-md px-3 py-1 text-[10px] font-black ${
+                      aluno["STATUS"] === "CANCELADO"
+                        ? "bg-red-600 text-white"
+                        : "bg-green-600 text-white"
+                    }`}
+                  >
+                    {aluno["STATUS"] || "ATIVO"}
+                  </button>
+
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+                  {aluno["Data Cadastro"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["TURMA"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["ID"]}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Aluno"]}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+                  {aluno["Cidade"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {formatarTelefone(aluno["Tel. Resp"])}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {formatarTelefone(aluno["Tel. Aluno"])}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Curso"] || "-"}
+                </div>
+
+                <div className="flex items-center justify-center p-3">
+                  <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
+                    ✎
+                  </span>
+                </div>
+
+              </a>
+            ))}
 
           </div>
-        )}
 
-        {/* EDIÇÃO LOTE */}
-
-        {mostrarLote && (
-          <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
-
-            <div className="mb-3 text-xs font-black uppercase text-cyan-300">
-              Edição em lote
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
-
-              <DatePicker
-                selected={inicioLote}
-                onChange={(date: any) => {
-                  if (!date) {
-                    setInicioLote(null);
-                    setFimLote(null);
-                    setCursoFiltroLote("");
-                    return;
-                  }
-
-                  setInicioLote(date);
-                  setFimLote(date);
-
-                  setCursoFiltroLote("");
-                }}
-                dateFormat="dd/MM/yyyy"
-                placeholderText="Selecione uma data"
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
-              />
-
-              <select
-                value={cursoFiltroLote}
-                onChange={(e) =>
-                  setCursoFiltroLote(e.target.value)
-                }
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
-              >
-                <option value="">
-                  Selecione o curso
-                </option>
-
-                {cursosDisponiveisLote.map((curso) => (
-                  <option key={curso} value={curso}>
-                    {curso}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                value={novaTurma}
-                onChange={(e) =>
-                  setNovaTurma(e.target.value)
-                }
-                placeholder="Nova TURMA"
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
-              />
-
-              <input
-                value={novaTurmaIngles}
-                onChange={(e) =>
-                  setNovaTurmaIngles(e.target.value)
-                }
-                placeholder="Nova TURMA INGLÊS"
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
-              />
-
-              <button
-                onClick={aplicarEdicaoLote}
-                className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white"
-              >
-                APLICAR EM {alunosLote.length}
-              </button>
-
-            </div>
-
-          </div>
-        )}
+        </div>
 
       </section>
 
