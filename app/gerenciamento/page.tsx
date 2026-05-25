@@ -530,20 +530,51 @@ export default function GerenciamentoPage() {
                 className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
               >
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  <span
-                    className={`rounded-md px-3 py-1 text-[10px] font-black ${
-                      aluno["Excluido"] === true
-                        ? "bg-red-950 text-red-300"
-                        : aluno["STATUS"] === "CANCELADO"
-                        ? "bg-yellow-950 text-yellow-300"
-                        : "bg-green-950 text-green-300"
-                    }`}
-                  >
-                    {aluno["Excluido"] === true
-                      ? "EXCLUÍDO"
-                      : aluno["STATUS"] || "ATIVO"}
-                  </span>
-                </div>
+  <select
+    value={aluno["STATUS"] || "ATIVO"}
+    onClick={(e) => e.preventDefault()}
+    onChange={async (e) => {
+      e.preventDefault();
+
+      const novoStatus = e.target.value;
+
+      const { error } = await supabase
+        .from("backup alunos")
+        .update({
+          STATUS: novoStatus,
+        })
+        .eq("ID", aluno["ID"]);
+
+      if (error) {
+        alert("Erro ao atualizar status.");
+        console.error(error);
+        return;
+      }
+
+      setAlunos((prev) =>
+        prev.map((a) =>
+          a["ID"] === aluno["ID"]
+            ? {
+                ...a,
+                STATUS: novoStatus,
+              }
+            : a
+        )
+      );
+    }}
+    className={`cursor-pointer rounded-md border px-3 py-1 text-[10px] font-black outline-none transition-all ${
+      aluno["STATUS"] === "CANCELADO"
+        ? "border-red-700 bg-red-600 text-white"
+        : aluno["STATUS"] === "PENDENTE"
+        ? "border-yellow-600 bg-yellow-500 text-black"
+        : "border-green-700 bg-green-600 text-white"
+    }`}
+  >
+    <option value="ATIVO">ATIVO</option>
+    <option value="CANCELADO">CANCELADO</option>
+    <option value="PENDENTE">PENDENTE</option>
+  </select>
+</div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
                   {aluno["Data Cadastro"] || "-"}
