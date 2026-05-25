@@ -5,6 +5,9 @@ import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
 const Plot: any = dynamic(
   async () => {
     // @ts-ignore
@@ -25,9 +28,13 @@ function pegarDataMatricula(a: any) {
 
 function parseDataBR(data?: string) {
   if (!data) return null;
+
   const partes = String(data).split("/");
+
   if (partes.length !== 3) return null;
+
   const [d, m, a] = partes;
+
   return new Date(`${a}-${m}-${d}T00:00:00`);
 }
 
@@ -44,6 +51,7 @@ function calcularTotalPagoReal(texto: any) {
   const linha = String(texto).toUpperCase();
 
   if (!linha.includes("PAGO") && !linha.includes("PAGA")) return 0;
+
   if (linha.includes("FICOU DE FAZER")) return 0;
 
   let total = 0;
@@ -53,12 +61,16 @@ function calcularTotalPagoReal(texto: any) {
   }
 
   const cartaoTotal = [
-    ...linha.matchAll(/(?:CARTÃO|LINK CARTÃO).*?PAGO\s*R?\$?\s*([\d\.,]+)/g),
+    ...linha.matchAll(
+      /(?:CARTÃO|LINK CARTÃO).*?PAGO\s*R?\$?\s*([\d\.,]+)/g
+    ),
   ];
+
   const valoresCartao: number[] = [];
 
   cartaoTotal.forEach((m) => {
     const valor = parseValor(m[1]);
+
     if (!isNaN(valor)) {
       total += valor;
       valoresCartao.push(valor);
@@ -66,38 +78,58 @@ function calcularTotalPagoReal(texto: any) {
   });
 
   const cartaoParcelado = [
-    ...linha.matchAll(/(?:CARTÃO|LINK CARTÃO).*?PAGO\s+(\d+)\s*X\s*([\d\.,]+)/g),
+    ...linha.matchAll(
+      /(?:CARTÃO|LINK CARTÃO).*?PAGO\s+(\d+)\s*X\s*([\d\.,]+)/g
+    ),
   ];
 
   cartaoParcelado.forEach((m) => {
     const qtd = Number(m[1]);
     const valor = parseValor(m[2]);
-    if (!isNaN(qtd) && !isNaN(valor)) total += qtd * valor;
+
+    if (!isNaN(qtd) && !isNaN(valor)) {
+      total += qtd * valor;
+    }
   });
 
   const primeira = [
-    ...linha.matchAll(/PAGO\s+PRIMEIRA\s+PARCELA\s*R?\$?\s*([\d\.,]+)/g),
+    ...linha.matchAll(
+      /PAGO\s+PRIMEIRA\s+PARCELA\s*R?\$?\s*([\d\.,]+)/g
+    ),
   ];
 
   primeira.forEach((m) => {
     const valor = parseValor(m[1]);
-    if (!isNaN(valor)) total += valor;
+
+    if (!isNaN(valor)) {
+      total += valor;
+    }
   });
 
   const pagoAvulso = [
-    ...linha.matchAll(/PAGO(?:\s+A\s+VISTA|\s+VIA\s+PIX|\s+DINHEIRO|\s+DÉBITO)?\s*R?\$?\s*([\d\.,]+)/g),
+    ...linha.matchAll(
+      /PAGO(?:\s+A\s+VISTA|\s+VIA\s+PIX|\s+DINHEIRO|\s+DÉBITO)?\s*R?\$?\s*([\d\.,]+)/g
+    ),
   ];
 
   pagoAvulso.forEach((m) => {
     const valor = parseValor(m[1]);
-    if (!isNaN(valor) && !valoresCartao.includes(valor)) total += valor;
+
+    if (!isNaN(valor) && !valoresCartao.includes(valor)) {
+      total += valor;
+    }
   });
 
-  const taxa = [...linha.matchAll(/TAXA\s*R?\$?\s*([\d\.,]+).*?PAGA/g)];
+  const taxa = [
+    ...linha.matchAll(/TAXA\s*R?\$?\s*([\d\.,]+).*?PAGA/g),
+  ];
 
   taxa.forEach((m) => {
     const valor = parseValor(m[1]);
-    if (!isNaN(valor)) total += valor;
+
+    if (!isNaN(valor)) {
+      total += valor;
+    }
   });
 
   return total;
@@ -105,18 +137,31 @@ function calcularTotalPagoReal(texto: any) {
 
 function tipoPagamento(txt: any) {
   const t = String(txt || "").toUpperCase();
-  if (t.includes("CARTÃO") || t.includes("LINK CARTÃO")) return "CARTAO";
-  if (t.includes("BOLETO")) return "BOLETO";
+
+  if (t.includes("CARTÃO") || t.includes("LINK CARTÃO")) {
+    return "CARTAO";
+  }
+
+  if (t.includes("BOLETO")) {
+    return "BOLETO";
+  }
+
   return "OUTRO";
 }
 
 export default function Relatorios() {
   const router = useRouter();
+
   const [carregandoLogin, setCarregandoLogin] = useState(true);
 
   const [dados, setDados] = useState<any[]>([]);
-  const [inicio, setInicio] = useState("");
-  const [fim, setFim] = useState("");
+
+  const [periodo, setPeriodo] = useState<[Date | null, Date | null]>([
+    null,
+    null,
+  ]);
+
+  const [inicio, fim] = periodo;
 
   useEffect(() => {
     async function verificarLogin() {
@@ -142,11 +187,12 @@ export default function Relatorios() {
     if (carregandoLogin) return;
 
     const hoje = new Date();
+
     const seteDias = new Date();
+
     seteDias.setDate(hoje.getDate() - 7);
 
-    setInicio(seteDias.toISOString().slice(0, 10));
-    setFim(hoje.toISOString().slice(0, 10));
+    setPeriodo([seteDias, hoje]);
 
     async function buscar() {
       let todos: any[] = [];
@@ -163,6 +209,7 @@ export default function Relatorios() {
         todos = [...todos, ...data];
 
         if (data.length < 1000) break;
+
         i += 1000;
       }
 
@@ -175,10 +222,22 @@ export default function Relatorios() {
   const filtrado = useMemo(() => {
     return dados.filter((a) => {
       const d = parseDataBR(pegarDataMatricula(a));
+
       if (!d) return false;
 
-      if (inicio && d < new Date(`${inicio}T00:00:00`)) return false;
-      if (fim && d > new Date(`${fim}T23:59:59`)) return false;
+      if (inicio) {
+        const inicioDia = new Date(inicio);
+        inicioDia.setHours(0, 0, 0, 0);
+
+        if (d < inicioDia) return false;
+      }
+
+      if (fim) {
+        const fimDia = new Date(fim);
+        fimDia.setHours(23, 59, 59, 999);
+
+        if (d > fimDia) return false;
+      }
 
       return true;
     });
@@ -204,50 +263,89 @@ export default function Relatorios() {
 
   const media = (arr: any[]) => {
     const validos = arr.filter((x) => x.valor > 0);
+
     if (validos.length === 0) return 0;
-    return validos.reduce((s, x) => s + x.valor, 0) / validos.length;
+
+    return (
+      validos.reduce((s, x) => s + x.valor, 0) /
+      validos.length
+    );
   };
 
   const tmGeral = media(tickets);
-  const tmBoleto = media(tickets.filter((t) => t.tipo === "BOLETO"));
-  const tmCartao = media(tickets.filter((t) => t.tipo === "CARTAO"));
+
+  const tmBoleto = media(
+    tickets.filter((t) => t.tipo === "BOLETO")
+  );
+
+  const tmCartao = media(
+    tickets.filter((t) => t.tipo === "CARTAO")
+  );
 
   const porArea = {
     banc: filtrado.filter((a) =>
-      String(a.Curso || "").toUpperCase().includes("BANCÁRIO")
+      String(a.Curso || "")
+        .toUpperCase()
+        .includes("BANCÁRIO")
     ).length,
+
     agro: filtrado.filter((a) =>
-      String(a.Curso || "").toUpperCase().includes("AGRO")
+      String(a.Curso || "")
+        .toUpperCase()
+        .includes("AGRO")
     ).length,
+
     ing: filtrado.filter((a) =>
-      String(a.Curso || "").toUpperCase().includes("INGLÊS")
+      String(a.Curso || "")
+        .toUpperCase()
+        .includes("INGLÊS")
     ).length,
+
     tec: filtrado.filter((a) =>
-      /TECNOLOGIA|INFORMÁTICA/i.test(String(a.Curso || ""))
+      /TECNOLOGIA|INFORMÁTICA/i.test(
+        String(a.Curso || "")
+      )
     ).length,
   };
 
   const cidades = Object.entries(
     filtrado.reduce((acc: any, a) => {
       const cidade = a.Cidade || "NÃO INFORMADO";
-      acc[cidade] = acc[cidade] || { qtd: 0, vendedores: new Set() };
+
+      acc[cidade] = acc[cidade] || {
+        qtd: 0,
+        vendedores: new Set(),
+      };
+
       acc[cidade].qtd += 1;
-      acc[cidade].vendedores.add(String(a.Vendedor || "").split(" - ")[0]);
+
+      acc[cidade].vendedores.add(
+        String(a.Vendedor || "").split(" - ")[0]
+      );
+
       return acc;
     }, {})
   )
     .map(([cidade, info]: any) => ({
       cidade,
       qtd: info.qtd,
-      vendedores: Array.from(info.vendedores).filter(Boolean).join(", "),
+      vendedores: Array.from(info.vendedores)
+        .filter(Boolean)
+        .join(", "),
     }))
     .sort((a, b) => b.qtd - a.qtd)
     .slice(0, 5);
 
   const vendedores = Object.entries(
     filtrado.reduce((acc: any, a) => {
-      const v = String(a.Vendedor || "NÃO INFORMADO").split(" - ")[0].trim();
+      const v = String(
+        a.Vendedor || "NÃO INFORMADO"
+      )
+        .split(" - ")[0]
+        .trim();
+
       acc[v] = (acc[v] || 0) + 1;
+
       return acc;
     }, {})
   )
@@ -264,7 +362,9 @@ export default function Relatorios() {
   if (carregandoLogin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
-        <div className="font-black">VERIFICANDO LOGIN...</div>
+        <div className="font-black">
+          VERIFICANDO LOGIN...
+        </div>
       </main>
     );
   }
@@ -278,6 +378,7 @@ export default function Relatorios() {
           ["📊 RELATÓRIOS", "/relatorios"],
           ["📤 SUBIR ALUNOS", "/subir-alunos"],
           ["📤 SUBIR ALUNOS DE INGLÊS", "/subir-alunos-ingles"],
+          ["📇 CRIAR CONTATOS", "/criar-contatos"],
         ].map(([tab, href]) => (
           <a
             key={tab}
@@ -310,27 +411,46 @@ export default function Relatorios() {
             Filtrar Período — Data de Matrícula
           </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <input
-              type="date"
-              value={inicio}
-              onChange={(e) => setInicio(e.target.value)}
-              className="rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none"
-            />
-            <input
-              type="date"
-              value={fim}
-              onChange={(e) => setFim(e.target.value)}
-              className="rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none"
+          <div className="w-full max-w-[420px]">
+            <DatePicker
+              selectsRange
+              startDate={inicio}
+              endDate={fim}
+              onChange={(update: any) => {
+                setPeriodo(update);
+              }}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Selecione o período"
+              className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-          <Card cor="pink" title="MATRÍCULAS" value={filtrado.length} />
-          <Card cor="green" title="ATIVOS" value={ativos} />
-          <Card cor="red" title="CANCELADOS" value={cancelados} />
-          <Card cor="blue" title="TOTAL RECEBIDO" value={formatarMoeda(totalRecebido)} />
+          <Card
+            cor="pink"
+            title="MATRÍCULAS"
+            value={filtrado.length}
+          />
+
+          <Card
+            cor="green"
+            title="ATIVOS"
+            value={ativos}
+          />
+
+          <Card
+            cor="red"
+            title="CANCELADOS"
+            value={cancelados}
+          />
+
+          <Card
+            cor="blue"
+            title="TOTAL RECEBIDO"
+            value={formatarMoeda(totalRecebido)}
+          />
+
           <Card
             cor="purple"
             title="TICKET MÉDIO"
@@ -342,14 +462,17 @@ export default function Relatorios() {
               </>
             }
           />
+
           <Card
             cor="blue"
             title="POR ÁREA"
             value={
               <>
-                BANC: {porArea.banc} | AGRO: {porArea.agro}
+                BANC: {porArea.banc} | AGRO:{" "}
+                {porArea.agro}
                 <br />
-                INGL: {porArea.ing} | TECN: {porArea.tec}
+                INGL: {porArea.ing} | TECN:{" "}
+                {porArea.tec}
               </>
             }
           />
@@ -388,7 +511,10 @@ export default function Relatorios() {
               yaxis: { visible: false },
               font: { color: "#e0e0e0" },
             }}
-            config={{ displayModeBar: false, responsive: true }}
+            config={{
+              displayModeBar: false,
+              responsive: true,
+            }}
             style={{ width: "100%" }}
           />
         </div>
@@ -406,7 +532,9 @@ export default function Relatorios() {
                   y: cidades.map((c) => c.qtd),
                   type: "bar",
                   marker: { color: "#00f2ff" },
-                  text: cidades.map((c) => `${c.qtd}<br>${c.vendedores}`),
+                  text: cidades.map(
+                    (c) => `${c.qtd}<br>${c.vendedores}`
+                  ),
                   textposition: "outside",
                 },
               ]}
@@ -414,9 +542,15 @@ export default function Relatorios() {
                 ...plotLayoutBase,
                 height: 430,
                 xaxis: { showgrid: false },
-                yaxis: { showgrid: false, showticklabels: false },
+                yaxis: {
+                  showgrid: false,
+                  showticklabels: false,
+                },
               }}
-              config={{ displayModeBar: false, responsive: true }}
+              config={{
+                displayModeBar: false,
+                responsive: true,
+              }}
               style={{ width: "100%" }}
             />
           </div>
@@ -435,11 +569,18 @@ export default function Relatorios() {
                   mode: "lines+markers+text",
                   text: vendedores.map((v: any) => v[1]),
                   textposition: "top center",
-                  line: { color: "#bc13fe", width: 4, shape: "spline" },
+                  line: {
+                    color: "#bc13fe",
+                    width: 4,
+                    shape: "spline",
+                  },
                   marker: {
                     size: 12,
                     color: "#ffffff",
-                    line: { color: "#bc13fe", width: 3 },
+                    line: {
+                      color: "#bc13fe",
+                      width: 3,
+                    },
                   },
                   fill: "tozeroy",
                   fillcolor: "rgba(188, 19, 254, 0.2)",
@@ -451,11 +592,15 @@ export default function Relatorios() {
                 xaxis: { showgrid: false },
                 yaxis: {
                   showgrid: true,
-                  gridcolor: "rgba(255,255,255,0.05)",
+                  gridcolor:
+                    "rgba(255,255,255,0.05)",
                   showticklabels: false,
                 },
               }}
-              config={{ displayModeBar: false, responsive: true }}
+              config={{
+                displayModeBar: false,
+                responsive: true,
+              }}
               style={{ width: "100%" }}
             />
           </div>
@@ -471,7 +616,8 @@ function Card({ title, value, cor }: any) {
     green: "border-green-500 shadow-green-500/30 text-green-300",
     red: "border-red-500 shadow-red-500/30 text-red-300",
     blue: "border-cyan-400 shadow-cyan-400/30 text-cyan-300",
-    purple: "border-purple-500 shadow-purple-500/30 text-purple-300",
+    purple:
+      "border-purple-500 shadow-purple-500/30 text-purple-300",
   };
 
   return (
@@ -482,7 +628,9 @@ function Card({ title, value, cor }: any) {
         {title}
       </div>
 
-      <div className="text-xl font-black text-slate-100">{value}</div>
+      <div className="text-xl font-black text-slate-100">
+        {value}
+      </div>
     </div>
   );
 }
