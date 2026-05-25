@@ -27,14 +27,6 @@ function converterDataBR(data?: string) {
   return new Date(`${ano}-${mes}-${dia}`).getTime();
 }
 
-function isoParaBR(dataISO: string) {
-  if (!dataISO) return "";
-
-  const [ano, mes, dia] = dataISO.split("-");
-
-  return `${dia}/${mes}/${ano}`;
-}
-
 function ordenarAlunos(a: any, b: any) {
   const ordemA = Number(a["Ordem"] || 0);
   const ordemB = Number(b["Ordem"] || 0);
@@ -76,36 +68,58 @@ function formatarTelefone(valor: any) {
 export default function GerenciamentoPage() {
   const router = useRouter();
 
+  // =========================
+  // STATES
+  // =========================
+
   const [carregandoLogin, setCarregandoLogin] = useState(true);
 
   const [alunos, setAlunos] = useState<any[]>([]);
+
   const [pesquisa, setPesquisa] = useState("");
 
   const [mostrarDownload, setMostrarDownload] = useState(false);
 
-  const [intervaloDownload, setIntervaloDownload] = useState<
-    [Date | null, Date | null]
-  >([null, null]);
+  const [mostrarExcluidos, setMostrarExcluidos] =
+    useState(false);
 
-  const [inicioDownload, fimDownload] = intervaloDownload;
+  // =========================
+  // DOWNLOAD
+  // =========================
 
-  const [cidadeDownload, setCidadeDownload] = useState("TODAS");
+  const [intervaloDownload, setIntervaloDownload] =
+    useState<[Date | null, Date | null]>([
+      null,
+      null,
+    ]);
 
-  const [mostrarExcluidos, setMostrarExcluidos] = useState(false);
+  const [inicioDownload, fimDownload] =
+    intervaloDownload;
+
+  const [cidadeDownload, setCidadeDownload] =
+    useState("TODAS");
 
   // =========================
   // EDIÇÃO EM LOTE
   // =========================
 
-  const [mostrarLote, setMostrarLote] = useState(false);
+  const [mostrarLote, setMostrarLote] =
+    useState(false);
 
-  const [inicioLote, setInicioLote] = useState<Date | null>(null);
-  const [fimLote, setFimLote] = useState<Date | null>(null);
+  const [inicioLote, setInicioLote] =
+    useState<Date | null>(null);
 
-  const [cursoFiltroLote, setCursoFiltroLote] = useState("");
+  const [fimLote, setFimLote] =
+    useState<Date | null>(null);
 
-  const [novaTurma, setNovaTurma] = useState("");
-  const [novaTurmaIngles, setNovaTurmaIngles] = useState("");
+  const [cursoFiltroLote, setCursoFiltroLote] =
+    useState("");
+
+  const [novaTurma, setNovaTurma] =
+    useState("");
+
+  const [novaTurmaIngles, setNovaTurmaIngles] =
+    useState("");
 
   // =========================
   // LOGIN
@@ -113,7 +127,8 @@ export default function GerenciamentoPage() {
 
   useEffect(() => {
     async function verificarLogin() {
-      const { data } = await supabase.auth.getSession();
+      const { data } =
+        await supabase.auth.getSession();
 
       if (!data.session) {
         router.push("/login");
@@ -147,7 +162,7 @@ export default function GerenciamentoPage() {
           .range(inicio, inicio + tamanho - 1);
 
         if (error) {
-          console.error("Erro Supabase:", error);
+          console.error(error);
           break;
         }
 
@@ -171,15 +186,17 @@ export default function GerenciamentoPage() {
   }, [carregandoLogin]);
 
   // =========================
-  // FILTRO NORMAL
+  // FILTRO PRINCIPAL
   // =========================
 
   const filtrados = useMemo(() => {
-    const termo = pesquisa.trim().toLowerCase();
+    const termo =
+      pesquisa.trim().toLowerCase();
 
     return alunos
       .filter((a) => {
-        const excluido = a["Excluido"] === true;
+        const excluido =
+          a["Excluido"] === true;
 
         if (mostrarExcluidos) {
           if (!excluido) return false;
@@ -189,73 +206,106 @@ export default function GerenciamentoPage() {
 
         if (!termo) return true;
 
-        return Object.values(a).some((valor) =>
-          String(valor || "").toLowerCase().includes(termo)
+        return Object.values(a).some(
+          (valor) =>
+            String(valor || "")
+              .toLowerCase()
+              .includes(termo)
         );
       })
       .sort(ordenarAlunos);
-  }, [alunos, pesquisa, mostrarExcluidos]);
+  }, [
+    alunos,
+    pesquisa,
+    mostrarExcluidos,
+  ]);
 
   // =========================
   // CURSOS LOTE
   // =========================
 
-  const cursosDisponiveisLote = useMemo(() => {
-    if (!inicioLote) return [];
+  const cursosDisponiveisLote =
+    useMemo(() => {
+      if (!inicioLote) return [];
 
-    const inicio = new Date(inicioLote);
-    inicio.setHours(0, 0, 0, 0);
+      const inicio = new Date(inicioLote);
 
-    const fim = fimLote ? new Date(fimLote) : new Date(inicioLote);
+      inicio.setHours(0, 0, 0, 0);
 
-    fim.setHours(23, 59, 59, 999);
+      const fim = fimLote
+        ? new Date(fimLote)
+        : new Date(inicioLote);
 
-    const cursos = alunos
-      .filter((a) => {
-        const dataAluno = converterDataBR(a["Data Cadastro"]);
+      fim.setHours(23, 59, 59, 999);
 
-        return (
-          dataAluno >= inicio.getTime() &&
-          dataAluno <= fim.getTime() &&
-          a["Excluido"] !== true
-        );
-      })
-      .map((a) => String(a["Curso"] || "").trim())
-      .filter(Boolean);
+      const cursos = alunos
+        .filter((a) => {
+          const dataAluno =
+            converterDataBR(
+              a["Data Cadastro"]
+            );
 
-    return Array.from(new Set(cursos)).sort((a, b) =>
-      a.localeCompare(b, "pt-BR")
-    );
-  }, [alunos, inicioLote, fimLote]);
+          return (
+            dataAluno >=
+              inicio.getTime() &&
+            dataAluno <= fim.getTime() &&
+            a["Excluido"] !== true
+          );
+        })
+        .map((a) =>
+          String(a["Curso"] || "").trim()
+        )
+        .filter(Boolean);
+
+      return Array.from(
+        new Set(cursos)
+      ).sort((a, b) =>
+        a.localeCompare(b, "pt-BR")
+      );
+    }, [alunos, inicioLote, fimLote]);
 
   // =========================
-  // ALUNOS DO LOTE
+  // ALUNOS LOTE
   // =========================
 
   const alunosLote = useMemo(() => {
     if (!inicioLote) return [];
 
     const inicio = new Date(inicioLote);
+
     inicio.setHours(0, 0, 0, 0);
 
-    const fim = fimLote ? new Date(fimLote) : new Date(inicioLote);
+    const fim = fimLote
+      ? new Date(fimLote)
+      : new Date(inicioLote);
 
     fim.setHours(23, 59, 59, 999);
 
     return alunos.filter((a) => {
-      const dataAluno = converterDataBR(a["Data Cadastro"]);
+      const dataAluno =
+        converterDataBR(
+          a["Data Cadastro"]
+        );
 
-      const curso = String(a["Curso"] || "");
+      const curso = String(
+        a["Curso"] || ""
+      );
 
       return (
-        dataAluno >= inicio.getTime() &&
+        dataAluno >=
+          inicio.getTime() &&
         dataAluno <= fim.getTime() &&
         cursoFiltroLote &&
         curso === cursoFiltroLote &&
         a["Excluido"] !== true
       );
     });
-  }, [alunos, inicioLote, fimLote, cursoFiltroLote]);
+  }, [
+    alunos,
+    inicioLote,
+    fimLote,
+    cursoFiltroLote,
+  ]);
 
   // =========================
   // EDIÇÃO EM LOTE
@@ -267,35 +317,126 @@ export default function GerenciamentoPage() {
       return;
     }
 
-    const updates = alunosLote.map((aluno) =>
-      supabase
-        .from("backup alunos")
-        .update({
-          TURMA: novaTurma || aluno["TURMA"],
-          "TURMA INGLÊS":
-            novaTurmaIngles || aluno["TURMA INGLÊS"],
-        })
-        .eq("ID", aluno["ID"])
+    const updates = alunosLote.map(
+      (aluno) =>
+        supabase
+          .from("backup alunos")
+          .update({
+            TURMA:
+              novaTurma ||
+              aluno["TURMA"],
+
+            "TURMA INGLÊS":
+              novaTurmaIngles ||
+              aluno["TURMA INGLÊS"],
+          })
+          .eq("ID", aluno["ID"])
     );
 
     await Promise.all(updates);
 
     setAlunos((prev) =>
       prev.map((a) => {
-        const existe = alunosLote.find((x) => x["ID"] === a["ID"]);
+        const existe =
+          alunosLote.find(
+            (x) =>
+              x["ID"] === a["ID"]
+          );
 
         if (!existe) return a;
 
         return {
           ...a,
-          TURMA: novaTurma || a["TURMA"],
+
+          TURMA:
+            novaTurma ||
+            a["TURMA"],
+
           "TURMA INGLÊS":
-            novaTurmaIngles || a["TURMA INGLÊS"],
+            novaTurmaIngles ||
+            a["TURMA INGLÊS"],
         };
       })
     );
 
-    alert("Edição em lote concluída.");
+    alert(
+      `Edição aplicada em ${alunosLote.length} alunos`
+    );
+  }
+
+  // =========================
+  // DOWNLOAD EXCEL
+  // =========================
+
+  function baixarAlunosPorData() {
+    if (!inicioDownload) {
+      alert("Selecione uma data.");
+      return;
+    }
+
+    const inicio =
+      new Date(inicioDownload);
+
+    inicio.setHours(0, 0, 0, 0);
+
+    const fim = fimDownload
+      ? new Date(fimDownload)
+      : new Date(inicioDownload);
+
+    fim.setHours(23, 59, 59, 999);
+
+    let alunosDaData = alunos
+      .filter((a) => {
+        const dataAluno =
+          converterDataBR(
+            a["Data Cadastro"]
+          );
+
+        return (
+          dataAluno >=
+            inicio.getTime() &&
+          dataAluno <= fim.getTime() &&
+          a["Excluido"] !== true
+        );
+      })
+      .sort(ordenarAlunos)
+      .reverse();
+
+    if (cidadeDownload !== "TODAS") {
+      alunosDaData =
+        alunosDaData.filter(
+          (a) =>
+            String(
+              a["Cidade"] || ""
+            ).trim() ===
+            cidadeDownload
+        );
+    }
+
+    if (alunosDaData.length === 0) {
+      alert(
+        "Nenhum aluno encontrado."
+      );
+      return;
+    }
+
+    const ws =
+      XLSX.utils.json_to_sheet(
+        alunosDaData
+      );
+
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      wb,
+      ws,
+      "Alunos"
+    );
+
+    XLSX.writeFile(
+      wb,
+      "ALUNOS.xlsx"
+    );
   }
 
   // =========================
@@ -309,61 +450,15 @@ export default function GerenciamentoPage() {
   }
 
   // =========================
-  // DOWNLOAD EXCEL
-  // =========================
-
-  function baixarAlunosPorData() {
-    if (!inicioDownload) {
-      alert("Selecione uma data.");
-      return;
-    }
-
-    const inicio = new Date(inicioDownload);
-
-    inicio.setHours(0, 0, 0, 0);
-
-    const fim = fimDownload
-      ? new Date(fimDownload)
-      : new Date(inicioDownload);
-
-    fim.setHours(23, 59, 59, 999);
-
-    let alunosDaData = alunos
-      .filter((a) => {
-        const dataAluno = converterDataBR(a["Data Cadastro"]);
-
-        return (
-          dataAluno >= inicio.getTime() &&
-          dataAluno <= fim.getTime() &&
-          a["Excluido"] !== true
-        );
-      })
-      .sort(ordenarAlunos)
-      .reverse();
-
-    if (cidadeDownload !== "TODAS") {
-      alunosDaData = alunosDaData.filter(
-        (a) => String(a["Cidade"] || "").trim() === cidadeDownload
-      );
-    }
-
-    const ws = XLSX.utils.json_to_sheet(alunosDaData);
-
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, "Alunos");
-
-    XLSX.writeFile(wb, "ALUNOS.xlsx");
-  }
-
-  // =========================
   // LOADING
   // =========================
 
   if (carregandoLogin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
-        <div className="font-black">VERIFICANDO LOGIN...</div>
+        <div className="font-black">
+          VERIFICANDO LOGIN...
+        </div>
       </main>
     );
   }
@@ -413,7 +508,7 @@ export default function GerenciamentoPage() {
 
       <section className="px-4 pt-20 md:px-8 md:pt-14">
 
-        {/* TOPO LISTAGEM */}
+        {/* TOPO */}
 
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
@@ -435,27 +530,41 @@ export default function GerenciamentoPage() {
 
             <input
               value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
+              onChange={(e) =>
+                setPesquisa(
+                  e.target.value
+                )
+              }
               placeholder="Pesquisar..."
               className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
             />
 
             <button
-              onClick={() => setPesquisa("")}
+              onClick={() =>
+                setPesquisa("")
+              }
               className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-cyan-100"
             >
               LIMPAR
             </button>
 
             <button
-              onClick={() => setMostrarDownload((prev) => !prev)}
+              onClick={() =>
+                setMostrarDownload(
+                  (prev) => !prev
+                )
+              }
               className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white"
             >
               BAIXAR ALUNOS
             </button>
 
             <button
-              onClick={() => setMostrarLote((prev) => !prev)}
+              onClick={() =>
+                setMostrarLote(
+                  (prev) => !prev
+                )
+              }
               className="rounded-md bg-purple-700 px-4 py-2 text-xs font-black text-white"
             >
               EDIÇÃO EM LOTE
@@ -465,7 +574,7 @@ export default function GerenciamentoPage() {
 
         </div>
 
-        {/* BLOCO LOTE */}
+        {/* EDIÇÃO LOTE */}
 
         {mostrarLote && (
           <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
@@ -487,11 +596,16 @@ export default function GerenciamentoPage() {
                     return;
                   }
 
-                  const [inicio, fim] = update;
+                  const [
+                    inicio,
+                    fim,
+                  ] = update;
 
                   setInicioLote(inicio);
 
-                  setFimLote(fim || inicio);
+                  setFimLote(
+                    fim || inicio
+                  );
                 }}
                 isClearable
                 dateFormat="dd/MM/yyyy"
@@ -500,40 +614,66 @@ export default function GerenciamentoPage() {
               />
 
               <select
-                value={cursoFiltroLote}
-                onChange={(e) => setCursoFiltroLote(e.target.value)}
+                value={
+                  cursoFiltroLote
+                }
+                onChange={(e) =>
+                  setCursoFiltroLote(
+                    e.target.value
+                  )
+                }
                 className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
               >
+
                 <option value="">
                   Selecione o curso
                 </option>
 
-                {cursosDisponiveisLote.map((curso) => (
-                  <option key={curso} value={curso}>
-                    {curso}
-                  </option>
-                ))}
+                {cursosDisponiveisLote.map(
+                  (curso) => (
+                    <option
+                      key={curso}
+                      value={curso}
+                    >
+                      {curso}
+                    </option>
+                  )
+                )}
+
               </select>
 
               <input
                 value={novaTurma}
-                onChange={(e) => setNovaTurma(e.target.value)}
+                onChange={(e) =>
+                  setNovaTurma(
+                    e.target.value
+                  )
+                }
                 placeholder="Nova TURMA"
                 className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
               />
 
               <input
-                value={novaTurmaIngles}
-                onChange={(e) => setNovaTurmaIngles(e.target.value)}
+                value={
+                  novaTurmaIngles
+                }
+                onChange={(e) =>
+                  setNovaTurmaIngles(
+                    e.target.value
+                  )
+                }
                 placeholder="Nova TURMA INGLÊS"
                 className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black"
               />
 
               <button
-                onClick={aplicarEdicaoLote}
+                onClick={
+                  aplicarEdicaoLote
+                }
                 className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white"
               >
-                APLICAR EM {alunosLote.length}
+                APLICAR EM{" "}
+                {alunosLote.length}
               </button>
 
             </div>
@@ -546,6 +686,8 @@ export default function GerenciamentoPage() {
         <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
 
           <div className="min-w-[1450px]">
+
+            {/* HEADER */}
 
             <div className="grid grid-cols-[110px_120px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
 
@@ -591,6 +733,8 @@ export default function GerenciamentoPage() {
 
             </div>
 
+            {/* LINHAS */}
+
             {filtrados.map((aluno) => (
               <a
                 key={aluno["ID"]}
@@ -609,88 +753,146 @@ export default function GerenciamentoPage() {
                 >
 
                   <button
-                    onClick={async (e) => {
+                    onClick={async (
+                      e
+                    ) => {
                       e.preventDefault();
                       e.stopPropagation();
 
                       const statusAtual =
-                        aluno["STATUS"] || "ATIVO";
+                        aluno[
+                          "STATUS"
+                        ] || "ATIVO";
 
                       const novoStatus =
-                        statusAtual === "ATIVO"
+                        statusAtual ===
+                        "ATIVO"
                           ? "CANCELADO"
                           : "ATIVO";
 
-                      const { error } = await supabase
-                        .from("backup alunos")
+                      const {
+                        error,
+                      } = await supabase
+                        .from(
+                          "backup alunos"
+                        )
                         .update({
-                          STATUS: novoStatus,
+                          STATUS:
+                            novoStatus,
                         })
-                        .eq("ID", aluno["ID"]);
+                        .eq(
+                          "ID",
+                          aluno["ID"]
+                        );
 
                       if (error) {
-                        alert("Erro ao atualizar status.");
+                        alert(
+                          "Erro ao atualizar status."
+                        );
                         return;
                       }
 
-                      setAlunos((prev) =>
-                        prev.map((a) =>
-                          a["ID"] === aluno["ID"]
-                            ? {
-                                ...a,
-                                STATUS: novoStatus,
-                              }
-                            : a
-                        )
+                      setAlunos(
+                        (prev) =>
+                          prev.map(
+                            (a) =>
+                              a[
+                                "ID"
+                              ] ===
+                              aluno[
+                                "ID"
+                              ]
+                                ? {
+                                    ...a,
+                                    STATUS:
+                                      novoStatus,
+                                  }
+                                : a
+                          )
                       );
                     }}
                     className={`min-w-[90px] rounded-md px-3 py-1 text-[10px] font-black ${
-                      aluno["STATUS"] === "CANCELADO"
+                      aluno["STATUS"] ===
+                      "CANCELADO"
                         ? "bg-red-600 text-white"
                         : "bg-green-600 text-white"
                     }`}
                   >
-                    {aluno["STATUS"] || "ATIVO"}
+                    {aluno["STATUS"] ||
+                      "ATIVO"}
                   </button>
 
                 </div>
 
+                {/* DATA */}
+
                 <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
-                  {aluno["Data Cadastro"] || "-"}
+                  {aluno[
+                    "Data Cadastro"
+                  ] || "-"}
                 </div>
 
+                {/* TURMA */}
+
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["TURMA"] || "-"}
+                  {aluno["TURMA"] ||
+                    "-"}
                 </div>
+
+                {/* ID */}
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
                   {aluno["ID"]}
                 </div>
 
+                {/* NOME */}
+
                 <div className="flex items-center border-r border-[#12375f] p-3">
                   {aluno["Aluno"]}
                 </div>
 
+                {/* CIDADE */}
+
                 <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
-                  {aluno["Cidade"] || "-"}
+                  {aluno["Cidade"] ||
+                    "-"}
                 </div>
 
-                <div className="flex items-center border-r border-[#12375f] p-3">
-                  {formatarTelefone(aluno["Tel. Resp"])}
-                </div>
+                {/* TEL RESP */}
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {formatarTelefone(aluno["Tel. Aluno"])}
+                  {formatarTelefone(
+                    aluno[
+                      "Tel. Resp"
+                    ]
+                  )}
                 </div>
 
+                {/* TEL ALUNO */}
+
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["Curso"] || "-"}
+                  {formatarTelefone(
+                    aluno[
+                      "Tel. Aluno"
+                    ]
+                  )}
                 </div>
+
+                {/* CURSO */}
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Curso"] ||
+                    "-"}
+                </div>
+
+                {/* AÇÕES */}
 
                 <div className="flex items-center justify-center p-3">
+
                   <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
                     ✎
                   </span>
+
                 </div>
 
               </a>
