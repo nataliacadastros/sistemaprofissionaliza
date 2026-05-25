@@ -19,14 +19,6 @@ function converterDataBR(data?: string) {
   return new Date(`${ano}-${mes}-${dia}`).getTime();
 }
 
-function isoParaBR(dataISO: string) {
-  if (!dataISO) return "";
-
-  const [ano, mes, dia] = dataISO.split("-");
-
-  return `${dia}/${mes}/${ano}`;
-}
-
 function ordenarAlunos(a: any, b: any) {
   const ordemA = Number(a["Ordem"] || 0);
   const ordemB = Number(b["Ordem"] || 0);
@@ -80,6 +72,17 @@ export default function GerenciamentoPage() {
   const [cidadeDownload, setCidadeDownload] = useState("TODAS");
 
   const [mostrarExcluidos, setMostrarExcluidos] = useState(false);
+
+  const [mostrarEdicaoLote, setMostrarEdicaoLote] = useState(false);
+
+  const [intervaloLote, setIntervaloLote] = useState<
+    [Date | null, Date | null]
+  >([null, null]);
+
+  const [inicioLote, fimLote] = intervaloLote;
+
+  const [turmaLote, setTurmaLote] = useState("");
+  const [turmaInglesLote, setTurmaInglesLote] = useState("");
 
   useEffect(() => {
     async function verificarLogin() {
@@ -195,6 +198,89 @@ export default function GerenciamentoPage() {
     router.push("/login");
   }
 
+  async function salvarEdicaoLote() {
+    if (!inicioLote) {
+      alert("Selecione uma data.");
+      return;
+    }
+
+    if (!turmaLote.trim() && !turmaInglesLote.trim()) {
+      alert("Preencha TURMA ou TURMA INGLÊS.");
+      return;
+    }
+
+    const inicio = new Date(inicioLote);
+
+    inicio.setHours(0, 0, 0, 0);
+
+    const fim = fimLote
+      ? new Date(fimLote)
+      : new Date(inicioLote);
+
+    fim.setHours(23, 59, 59, 999);
+
+    const alunosParaEditar = alunos.filter((a) => {
+      const dataAluno = converterDataBR(a["Data Cadastro"]);
+
+      return (
+        dataAluno >= inicio.getTime() &&
+        dataAluno <= fim.getTime() &&
+        a["Excluido"] !== true
+      );
+    });
+
+    if (alunosParaEditar.length === 0) {
+      alert("Nenhum aluno encontrado.");
+      return;
+    }
+
+    for (const aluno of alunosParaEditar) {
+      const updateData: any = {};
+
+      if (turmaLote.trim()) {
+        updateData["TURMA"] = turmaLote.trim();
+      }
+
+      if (turmaInglesLote.trim()) {
+        updateData["TURMA INGLÊS"] = turmaInglesLote.trim();
+      }
+
+      const { error } = await supabase
+        .from("backup alunos")
+        .update(updateData)
+        .eq("ID", aluno["ID"]);
+
+      if (error) {
+        console.error(error);
+      }
+    }
+
+    setAlunos((prev) =>
+      prev.map((a) => {
+        const dataAluno = converterDataBR(a["Data Cadastro"]);
+
+        const dentroPeriodo =
+          dataAluno >= inicio.getTime() &&
+          dataAluno <= fim.getTime() &&
+          a["Excluido"] !== true;
+
+        if (!dentroPeriodo) return a;
+
+        return {
+          ...a,
+          ...(turmaLote.trim()
+            ? { TURMA: turmaLote.trim() }
+            : {}),
+          ...(turmaInglesLote.trim()
+            ? { "TURMA INGLÊS": turmaInglesLote.trim() }
+            : {}),
+        };
+      })
+    );
+
+    alert("Edição em lote concluída.");
+  }
+
   function baixarAlunosPorData() {
     if (!inicioDownload) {
       alert("Selecione uma data.");
@@ -241,8 +327,9 @@ export default function GerenciamentoPage() {
 
     const colunasPreferidas = [
       "STATUS",
-      "SEC",
       "TURMA",
+      "TURMA INGLÊS",
+      "SEC",
       "10 CURSOS?",
       "INGLÊS?",
       "Data Cadastro",
@@ -280,33 +367,16 @@ export default function GerenciamentoPage() {
 
     const ws = XLSX.utils.aoa_to_sheet([colunas, ...linhas]);
 
-    ws["!cols"] = colunas.map((coluna) => {
-      if (coluna === "Aluno") return { wch: 38 };
-      if (coluna === "Curso") return { wch: 50 };
-      if (coluna === "Pagamento") return { wch: 45 };
-      if (coluna === "Vendedor") return { wch: 25 };
-      if (coluna === "CPF") return { wch: 18 };
-      if (coluna.includes("Data")) return { wch: 18 };
-      if (coluna.includes("Tel")) return { wch: 22 };
-
-      return { wch: 16 };
-    });
-
     const wb = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(wb, ws, "Alunos");
-
-    const cidadeNome =
-      cidadeDownload === "TODAS"
-        ? "TODAS_AS_CIDADES"
-        : cidadeDownload.replace(/[\\/:*?"<>|]/g, "-");
 
     XLSX.writeFile(
       wb,
       `ALUNOS_${dataInicioBR.replaceAll(
         "/",
         "-"
-      )}_A_${dataFimBR.replaceAll("/", "-")}_${cidadeNome}.xlsx`
+      )}_A_${dataFimBR.replaceAll("/", "-")}.xlsx`
     );
   }
 
@@ -364,7 +434,7 @@ export default function GerenciamentoPage() {
             </p>
           </div>
 
-          <div className="flex w-full flex-col gap-3 lg:w-[760px] lg:flex-row lg:items-center">
+          <div className="flex w-full flex-col gap-3 lg:w-[980px] lg:flex-row lg:items-center">
             <input
               value={pesquisa}
               onChange={(e) => setPesquisa(e.target.value)}
@@ -387,6 +457,13 @@ export default function GerenciamentoPage() {
             </button>
 
             <button
+              onClick={() => setMostrarEdicaoLote((prev) => !prev)}
+              className="rounded-md bg-purple-700 px-4 py-2 text-xs font-black text-white hover:bg-purple-600"
+            >
+              EDITAR EM LOTE
+            </button>
+
+            <button
               onClick={() => {
                 setMostrarExcluidos((prev) => !prev);
                 setPesquisa("");
@@ -404,63 +481,57 @@ export default function GerenciamentoPage() {
           </div>
         </div>
 
-        {mostrarDownload && (
-          <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
-            <div className="mb-2 text-xs font-black uppercase text-cyan-300">
-              Selecione o intervalo de Data Cadastro para baixar
+        {mostrarEdicaoLote && (
+          <div className="mb-5 rounded-xl border border-purple-700 bg-[#071b31] p-4 shadow-2xl">
+            <div className="mb-4 text-xs font-black uppercase text-purple-300">
+              Edição em lote por Data Cadastro
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-cyan-300">
-                  Selecionar período
-                </label>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+              <DatePicker
+                selectsRange
+                startDate={inicioLote}
+                endDate={fimLote}
+                onChange={(update: any) => setIntervaloLote(update)}
+                isClearable
+                dateFormat="dd/MM/yyyy"
+                placeholderText="Selecione o período"
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
+              />
 
-                <DatePicker
-                  selectsRange
-                  startDate={inicioDownload}
-                  endDate={fimDownload}
-                  onChange={(update: any) => {
-                    setIntervaloDownload(update);
-                    setCidadeDownload("TODAS");
-                  }}
-                  isClearable
-                  dateFormat="dd/MM/yyyy"
-                  placeholderText="Selecione o intervalo"
-                  className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
-                />
-              </div>
+              <input
+                value={turmaLote}
+                onChange={(e) => setTurmaLote(e.target.value)}
+                placeholder="Nova TURMA"
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
+              />
 
-              <select
-                value={cidadeDownload}
-                onChange={(e) => setCidadeDownload(e.target.value)}
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
-              >
-                <option value="TODAS">Todas as cidades</option>
-
-                {cidadesDisponiveisDownload.map((cidade) => (
-                  <option key={cidade} value={cidade}>
-                    {cidade}
-                  </option>
-                ))}
-              </select>
+              <input
+                value={turmaInglesLote}
+                onChange={(e) => setTurmaInglesLote(e.target.value)}
+                placeholder="Nova TURMA INGLÊS"
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
+              />
 
               <button
-                onClick={baixarAlunosPorData}
-                className="rounded-md bg-green-700 px-5 py-2 text-xs font-black text-white hover:bg-green-600"
+                onClick={salvarEdicaoLote}
+                className="rounded-md bg-purple-700 px-5 py-2 text-xs font-black text-white hover:bg-purple-600"
               >
-                📥 BAIXAR EXCEL
+                SALVAR ALTERAÇÕES
               </button>
             </div>
           </div>
         )}
 
         <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
-          <div className="min-w-[1200px]">
-            <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
+          <div className="min-w-[1400px]">
+            <div className="grid grid-cols-[110px_120px_140px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
               <div className="border-r border-[#12375f] p-3">Status</div>
               <div className="border-r border-[#12375f] p-3">
                 Data cadastro
+              </div>
+              <div className="border-r border-[#12375f] p-3">
+                Turma
               </div>
               <div className="border-r border-[#12375f] p-3">
                 ID do aluno
@@ -485,7 +556,7 @@ export default function GerenciamentoPage() {
               <a
                 key={aluno["ID"]}
                 href={`/aluno/${aluno["ID"]}`}
-                className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+                className="grid min-h-[52px] grid-cols-[110px_120px_140px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
               >
                 <div
                   className="flex items-center border-r border-[#12375f] p-3"
@@ -532,21 +603,21 @@ export default function GerenciamentoPage() {
                       );
                     }}
                     className={`min-w-[86px] rounded-md px-3 py-1 text-[10px] font-black transition-all ${
-                      aluno["Excluido"] === true
-                        ? "bg-red-950 text-red-300"
-                        : aluno["STATUS"] === "CANCELADO"
+                      aluno["STATUS"] === "CANCELADO"
                         ? "bg-red-600 text-white"
                         : "bg-green-600 text-white"
                     }`}
                   >
-                    {aluno["Excluido"] === true
-                      ? "EXCLUÍDO"
-                      : aluno["STATUS"] || "ATIVO"}
+                    {aluno["STATUS"] || "ATIVO"}
                   </button>
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
                   {aluno["Data Cadastro"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3 text-yellow-300">
+                  {aluno["TURMA"] || "-"}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
