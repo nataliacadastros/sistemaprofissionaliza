@@ -292,48 +292,6 @@ export default function GerenciamentoPage() {
       return { wch: 16 };
     });
 
-    colunas.forEach((_, colIndex) => {
-      const celula = `${XLSX.utils.encode_col(colIndex)}1`;
-
-      if (ws[celula]) {
-        ws[celula].s = {
-          font: {
-            bold: true,
-            color: { rgb: "FFFFFF" },
-          },
-          fill: {
-            fgColor: { rgb: "0C2743" },
-          },
-          alignment: {
-            horizontal: "center",
-          },
-        };
-      }
-    });
-
-    alunosDaData.forEach((aluno, index) => {
-      const curso = String(aluno["Curso"] || "").toUpperCase();
-
-      if (curso.includes("TECNOLOGIA")) {
-        const linhaExcel = index + 2;
-
-        const colunaCurso = colunas.indexOf("Curso");
-
-        const celulaCurso = `${XLSX.utils.encode_col(
-          colunaCurso
-        )}${linhaExcel}`;
-
-        if (ws[celulaCurso]) {
-          ws[celulaCurso].s = {
-            font: {
-              color: { rgb: "FF0000" },
-              bold: true,
-            },
-          };
-        }
-      }
-    });
-
     const wb = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(wb, ws, "Alunos");
@@ -530,68 +488,62 @@ export default function GerenciamentoPage() {
                 className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
               >
                 <div
-  className="flex items-center border-r border-[#12375f] p-3"
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }}
->
-  <button
-    onClick={async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+                  className="flex items-center border-r border-[#12375f] p-3"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
 
-      const statusAtual = aluno["STATUS"] || "ATIVO";
+                      const statusAtual =
+                        aluno["STATUS"] || "ATIVO";
 
-      let novoStatus = "ATIVO";
+                      const novoStatus =
+                        statusAtual === "ATIVO"
+                          ? "CANCELADO"
+                          : "ATIVO";
 
-      if (statusAtual === "ATIVO") {
-        novoStatus = "CANCELADO";
-      } else if (statusAtual === "CANCELADO") {
-        novoStatus = "PENDENTE";
-      } else {
-        novoStatus = "ATIVO";
-      }
+                      const { error } = await supabase
+                        .from("backup alunos")
+                        .update({
+                          STATUS: novoStatus,
+                        })
+                        .eq("ID", aluno["ID"]);
 
-      const { error } = await supabase
-        .from("backup alunos")
-        .update({
-          STATUS: novoStatus,
-        })
-        .eq("ID", aluno["ID"]);
+                      if (error) {
+                        alert("Erro ao atualizar status.");
+                        console.error(error);
+                        return;
+                      }
 
-      if (error) {
-        alert("Erro ao atualizar status.");
-        console.error(error);
-        return;
-      }
-
-      setAlunos((prev) =>
-        prev.map((a) =>
-          a["ID"] === aluno["ID"]
-            ? {
-                ...a,
-                STATUS: novoStatus,
-              }
-            : a
-        )
-      );
-    }}
-    className={`min-w-[86px] rounded-md px-3 py-1 text-[10px] font-black transition-all ${
-      aluno["Excluido"] === true
-        ? "bg-red-950 text-red-300"
-        : aluno["STATUS"] === "CANCELADO"
-        ? "bg-red-600 text-white"
-        : aluno["STATUS"] === "PENDENTE"
-        ? "bg-yellow-500 text-black"
-        : "bg-green-600 text-white"
-    }`}
-  >
-    {aluno["Excluido"] === true
-      ? "EXCLUÍDO"
-      : aluno["STATUS"] || "ATIVO"}
-  </button>
-</div>
+                      setAlunos((prev) =>
+                        prev.map((a) =>
+                          a["ID"] === aluno["ID"]
+                            ? {
+                                ...a,
+                                STATUS: novoStatus,
+                              }
+                            : a
+                        )
+                      );
+                    }}
+                    className={`min-w-[86px] rounded-md px-3 py-1 text-[10px] font-black transition-all ${
+                      aluno["Excluido"] === true
+                        ? "bg-red-950 text-red-300"
+                        : aluno["STATUS"] === "CANCELADO"
+                        ? "bg-red-600 text-white"
+                        : "bg-green-600 text-white"
+                    }`}
+                  >
+                    {aluno["Excluido"] === true
+                      ? "EXCLUÍDO"
+                      : aluno["STATUS"] || "ATIVO"}
+                  </button>
+                </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
                   {aluno["Data Cadastro"] || "-"}
