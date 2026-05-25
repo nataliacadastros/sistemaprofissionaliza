@@ -861,15 +861,25 @@ export default function SubirAlunosPage() {
             </h2>
 
             <div className="grid grid-cols-3 gap-3">
-              {cidadesDownload.map((cidade: any) => (
-                <button
-                  key={cidade}
-                  onClick={() => baixarCidade(cidade)}
-                  className="rounded-md bg-green-700 px-4 py-3 text-xs font-black text-white hover:bg-green-600"
-                >
-                  📥 BAIXAR PLANILHA: {cidade}
-                </button>
-              ))}
+              {cidadesDownload.map((cidade: any) => {
+                const nomeCidadeBotao =
+                  rawProcessado.find((r) => {
+                    const chave = normalizarCidade(r.City);
+                    const opcoes = mapaCidades[chave] || [];
+
+                    return opcoes.some((opcao) => opcao.codigo === cidade);
+                  })?.City || cidade;
+
+                return (
+                  <button
+                    key={cidade}
+                    onClick={() => baixarCidade(cidade)}
+                    className="rounded-md bg-green-700 px-4 py-3 text-xs font-black text-white hover:bg-green-600"
+                  >
+                    📥 BAIXAR PLANILHA: {limparValor(nomeCidadeBotao).toUpperCase()}
+                  </button>
+                );
+              })}
             </div>
 
             <button
