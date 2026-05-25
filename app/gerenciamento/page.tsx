@@ -19,6 +19,14 @@ function converterDataBR(data?: string) {
   return new Date(`${ano}-${mes}-${dia}`).getTime();
 }
 
+function isoParaBR(dataISO: string) {
+  if (!dataISO) return "";
+
+  const [ano, mes, dia] = dataISO.split("-");
+
+  return `${dia}/${mes}/${ano}`;
+}
+
 function ordenarAlunos(a: any, b: any) {
   const ordemA = Number(a["Ordem"] || 0);
   const ordemB = Number(b["Ordem"] || 0);
@@ -73,16 +81,22 @@ export default function GerenciamentoPage() {
 
   const [mostrarExcluidos, setMostrarExcluidos] = useState(false);
 
-  const [mostrarEdicaoLote, setMostrarEdicaoLote] = useState(false);
+  const [mostrarEdicaoLote, setMostrarEdicaoLote] =
+    useState(false);
 
-  const [intervaloLote, setIntervaloLote] = useState<
+  const [intervaloEdicao, setIntervaloEdicao] = useState<
     [Date | null, Date | null]
   >([null, null]);
 
-  const [inicioLote, fimLote] = intervaloLote;
+  const [inicioEdicao, fimEdicao] = intervaloEdicao;
 
-  const [turmaLote, setTurmaLote] = useState("");
-  const [turmaInglesLote, setTurmaInglesLote] = useState("");
+  const [cursoSelecionadoLote, setCursoSelecionadoLote] =
+    useState("");
+
+  const [novaTurma, setNovaTurma] = useState("");
+
+  const [novaTurmaIngles, setNovaTurmaIngles] =
+    useState("");
 
   useEffect(() => {
     async function verificarLogin() {
@@ -155,7 +169,9 @@ export default function GerenciamentoPage() {
         if (!termo) return true;
 
         return Object.values(a).some((valor) =>
-          String(valor || "").toLowerCase().includes(termo)
+          String(valor || "")
+            .toLowerCase()
+            .includes(termo)
         );
       })
       .sort(ordenarAlunos);
@@ -176,7 +192,9 @@ export default function GerenciamentoPage() {
 
     const cidades = alunos
       .filter((a) => {
-        const dataAluno = converterDataBR(a["Data Cadastro"]);
+        const dataAluno = converterDataBR(
+          a["Data Cadastro"]
+        );
 
         return (
           dataAluno >= inicio.getTime() &&
@@ -192,6 +210,39 @@ export default function GerenciamentoPage() {
     );
   }, [alunos, inicioDownload, fimDownload]);
 
+  const cursosDisponiveisEdicao = useMemo(() => {
+    if (!inicioEdicao) return [];
+
+    const inicio = new Date(inicioEdicao);
+
+    inicio.setHours(0, 0, 0, 0);
+
+    const fim = fimEdicao
+      ? new Date(fimEdicao)
+      : new Date(inicioEdicao);
+
+    fim.setHours(23, 59, 59, 999);
+
+    const cursos = alunos
+      .filter((a) => {
+        const dataAluno = converterDataBR(
+          a["Data Cadastro"]
+        );
+
+        return (
+          dataAluno >= inicio.getTime() &&
+          dataAluno <= fim.getTime() &&
+          a["Excluido"] !== true
+        );
+      })
+      .map((a) => String(a["Curso"] || "").trim())
+      .filter(Boolean);
+
+    return Array.from(new Set(cursos)).sort((a, b) =>
+      a.localeCompare(b, "pt-BR")
+    );
+  }, [alunos, inicioEdicao, fimEdicao]);
+
   async function sair() {
     await supabase.auth.signOut();
 
@@ -199,50 +250,60 @@ export default function GerenciamentoPage() {
   }
 
   async function salvarEdicaoLote() {
-    if (!inicioLote) {
+    if (!inicioEdicao) {
       alert("Selecione uma data.");
       return;
     }
 
-    if (!turmaLote.trim() && !turmaInglesLote.trim()) {
-      alert("Preencha TURMA ou TURMA INGLÊS.");
+    if (!cursoSelecionadoLote) {
+      alert("Selecione um curso.");
       return;
     }
 
-    const inicio = new Date(inicioLote);
+    if (!novaTurma && !novaTurmaIngles) {
+      alert("Preencha ao menos uma turma.");
+      return;
+    }
+
+    const inicio = new Date(inicioEdicao);
 
     inicio.setHours(0, 0, 0, 0);
 
-    const fim = fimLote
-      ? new Date(fimLote)
-      : new Date(inicioLote);
+    const fim = fimEdicao
+      ? new Date(fimEdicao)
+      : new Date(inicioEdicao);
 
     fim.setHours(23, 59, 59, 999);
 
-    const alunosParaEditar = alunos.filter((a) => {
-      const dataAluno = converterDataBR(a["Data Cadastro"]);
+    const alunosFiltrados = alunos.filter((a) => {
+      const dataAluno = converterDataBR(
+        a["Data Cadastro"]
+      );
 
       return (
         dataAluno >= inicio.getTime() &&
         dataAluno <= fim.getTime() &&
-        a["Excluido"] !== true
+        a["Excluido"] !== true &&
+        String(a["Curso"] || "").trim() ===
+          cursoSelecionadoLote
       );
     });
 
-    if (alunosParaEditar.length === 0) {
+    if (alunosFiltrados.length === 0) {
       alert("Nenhum aluno encontrado.");
       return;
     }
 
-    for (const aluno of alunosParaEditar) {
+    for (const aluno of alunosFiltrados) {
       const updateData: any = {};
 
-      if (turmaLote.trim()) {
-        updateData["TURMA"] = turmaLote.trim();
+      if (novaTurma.trim()) {
+        updateData["TURMA"] = novaTurma.trim();
       }
 
-      if (turmaInglesLote.trim()) {
-        updateData["TURMA INGLÊS"] = turmaInglesLote.trim();
+      if (novaTurmaIngles.trim()) {
+        updateData["TURMA INGLÊS"] =
+          novaTurmaIngles.trim();
       }
 
       const { error } = await supabase
@@ -257,28 +318,35 @@ export default function GerenciamentoPage() {
 
     setAlunos((prev) =>
       prev.map((a) => {
-        const dataAluno = converterDataBR(a["Data Cadastro"]);
+        const pertence = alunosFiltrados.find(
+          (x) => x["ID"] === a["ID"]
+        );
 
-        const dentroPeriodo =
-          dataAluno >= inicio.getTime() &&
-          dataAluno <= fim.getTime() &&
-          a["Excluido"] !== true;
-
-        if (!dentroPeriodo) return a;
+        if (!pertence) return a;
 
         return {
           ...a,
-          ...(turmaLote.trim()
-            ? { TURMA: turmaLote.trim() }
+          ...(novaTurma.trim()
+            ? {
+                TURMA: novaTurma.trim(),
+              }
             : {}),
-          ...(turmaInglesLote.trim()
-            ? { "TURMA INGLÊS": turmaInglesLote.trim() }
+          ...(novaTurmaIngles.trim()
+            ? {
+                "TURMA INGLÊS":
+                  novaTurmaIngles.trim(),
+              }
             : {}),
         };
       })
     );
 
-    alert("Edição em lote concluída.");
+    alert(
+      `${alunosFiltrados.length} alunos atualizados com sucesso.`
+    );
+
+    setNovaTurma("");
+    setNovaTurmaIngles("");
   }
 
   function baixarAlunosPorData() {
@@ -297,13 +365,17 @@ export default function GerenciamentoPage() {
 
     fim.setHours(23, 59, 59, 999);
 
-    const dataInicioBR = inicio.toLocaleDateString("pt-BR");
+    const dataInicioBR =
+      inicio.toLocaleDateString("pt-BR");
 
-    const dataFimBR = fim.toLocaleDateString("pt-BR");
+    const dataFimBR =
+      fim.toLocaleDateString("pt-BR");
 
     let alunosDaData = alunos
       .filter((a) => {
-        const dataAluno = converterDataBR(a["Data Cadastro"]);
+        const dataAluno = converterDataBR(
+          a["Data Cadastro"]
+        );
 
         return (
           dataAluno >= inicio.getTime() &&
@@ -316,12 +388,16 @@ export default function GerenciamentoPage() {
 
     if (cidadeDownload !== "TODAS") {
       alunosDaData = alunosDaData.filter(
-        (a) => String(a["Cidade"] || "").trim() === cidadeDownload
+        (a) =>
+          String(a["Cidade"] || "").trim() ===
+          cidadeDownload
       );
     }
 
     if (alunosDaData.length === 0) {
-      alert("Nenhum aluno encontrado nesse intervalo/cidade.");
+      alert(
+        "Nenhum aluno encontrado nesse intervalo/cidade."
+      );
       return;
     }
 
@@ -349,7 +425,11 @@ export default function GerenciamentoPage() {
     ];
 
     const todasColunasEncontradas = Array.from(
-      new Set(alunosDaData.flatMap((aluno) => Object.keys(aluno)))
+      new Set(
+        alunosDaData.flatMap((aluno) =>
+          Object.keys(aluno)
+        )
+      )
     ).filter((coluna) => coluna !== "Ordem");
 
     const colunas = [
@@ -357,19 +437,29 @@ export default function GerenciamentoPage() {
         todasColunasEncontradas.includes(coluna)
       ),
       ...todasColunasEncontradas.filter(
-        (coluna) => !colunasPreferidas.includes(coluna)
+        (coluna) =>
+          !colunasPreferidas.includes(coluna)
       ),
     ];
 
     const linhas = alunosDaData.map((a) =>
-      colunas.map((coluna) => String(a[coluna] ?? ""))
+      colunas.map((coluna) =>
+        String(a[coluna] ?? "")
+      )
     );
 
-    const ws = XLSX.utils.aoa_to_sheet([colunas, ...linhas]);
+    const ws = XLSX.utils.aoa_to_sheet([
+      colunas,
+      ...linhas,
+    ]);
 
     const wb = XLSX.utils.book_new();
 
-    XLSX.utils.book_append_sheet(wb, ws, "Alunos");
+    XLSX.utils.book_append_sheet(
+      wb,
+      ws,
+      "Alunos"
+    );
 
     XLSX.writeFile(
       wb,
@@ -383,7 +473,9 @@ export default function GerenciamentoPage() {
   if (carregandoLogin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
-        <div className="font-black">VERIFICANDO LOGIN...</div>
+        <div className="font-black">
+          VERIFICANDO LOGIN...
+        </div>
       </main>
     );
   }
@@ -396,7 +488,10 @@ export default function GerenciamentoPage() {
           ["🖥️ GERENCIAMENTO", "/gerenciamento"],
           ["📊 RELATÓRIOS", "/relatorios"],
           ["📤 SUBIR ALUNOS", "/subir-alunos"],
-          ["📤 SUBIR ALUNOS DE INGLÊS", "/subir-alunos-ingles"],
+          [
+            "📤 SUBIR ALUNOS DE INGLÊS",
+            "/subir-alunos-ingles",
+          ],
           ["📇 CRIAR CONTATOS", "/criar-contatos"],
         ].map(([tab, href]) => (
           <a
@@ -437,7 +532,9 @@ export default function GerenciamentoPage() {
           <div className="flex w-full flex-col gap-3 lg:w-[980px] lg:flex-row lg:items-center">
             <input
               value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
+              onChange={(e) =>
+                setPesquisa(e.target.value)
+              }
               placeholder="Pesquisar por nome, ID, cidade, telefone, curso, status..."
               className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
             />
@@ -450,22 +547,30 @@ export default function GerenciamentoPage() {
             </button>
 
             <button
-              onClick={() => setMostrarDownload((prev) => !prev)}
+              onClick={() =>
+                setMostrarDownload((prev) => !prev)
+              }
               className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white hover:bg-green-600"
             >
               BAIXAR ALUNOS
             </button>
 
             <button
-              onClick={() => setMostrarEdicaoLote((prev) => !prev)}
-              className="rounded-md bg-purple-700 px-4 py-2 text-xs font-black text-white hover:bg-purple-600"
+              onClick={() =>
+                setMostrarEdicaoLote(
+                  (prev) => !prev
+                )
+              }
+              className="rounded-md bg-cyan-700 px-4 py-2 text-xs font-black text-white hover:bg-cyan-600"
             >
-              EDITAR EM LOTE
+              EDITAR TURMAS EM LOTE
             </button>
 
             <button
               onClick={() => {
-                setMostrarExcluidos((prev) => !prev);
+                setMostrarExcluidos(
+                  (prev) => !prev
+                );
                 setPesquisa("");
               }}
               className={`rounded-md px-4 py-2 text-xs font-black ${
@@ -482,81 +587,156 @@ export default function GerenciamentoPage() {
         </div>
 
         {mostrarEdicaoLote && (
-          <div className="mb-5 rounded-xl border border-purple-700 bg-[#071b31] p-4 shadow-2xl">
-            <div className="mb-4 text-xs font-black uppercase text-purple-300">
-              Edição em lote por Data Cadastro
+          <div className="mb-5 rounded-xl border border-cyan-700 bg-[#071b31] p-4 shadow-2xl">
+            <div className="mb-3 text-sm font-black uppercase text-cyan-300">
+              EDIÇÃO EM LOTE — TURMAS
             </div>
 
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
-              <DatePicker
-                selectsRange
-                startDate={inicioLote}
-                endDate={fimLote}
-                onChange={(update: any) => setIntervaloLote(update)}
-                isClearable
-                dateFormat="dd/MM/yyyy"
-                placeholderText="Selecione o período"
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
-              />
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+              <div>
+                <label className="mb-1 block text-[10px] font-black uppercase text-cyan-300">
+                  Período
+                </label>
 
-              <input
-                value={turmaLote}
-                onChange={(e) => setTurmaLote(e.target.value)}
-                placeholder="Nova TURMA"
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
-              />
+                <DatePicker
+                  selectsRange
+                  startDate={inicioEdicao}
+                  endDate={fimEdicao}
+                  onChange={(update: any) => {
+                    setIntervaloEdicao(update);
+                    setCursoSelecionadoLote("");
+                  }}
+                  isClearable
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Selecione o intervalo"
+                  className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
+                />
+              </div>
 
-              <input
-                value={turmaInglesLote}
-                onChange={(e) => setTurmaInglesLote(e.target.value)}
-                placeholder="Nova TURMA INGLÊS"
-                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
-              />
+              <div>
+                <label className="mb-1 block text-[10px] font-black uppercase text-cyan-300">
+                  Curso
+                </label>
 
-              <button
-                onClick={salvarEdicaoLote}
-                className="rounded-md bg-purple-700 px-5 py-2 text-xs font-black text-white hover:bg-purple-600"
-              >
-                SALVAR ALTERAÇÕES
-              </button>
+                <select
+                  value={cursoSelecionadoLote}
+                  onChange={(e) =>
+                    setCursoSelecionadoLote(
+                      e.target.value
+                    )
+                  }
+                  className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
+                >
+                  <option value="">
+                    Selecione
+                  </option>
+
+                  {cursosDisponiveisEdicao.map(
+                    (curso) => (
+                      <option
+                        key={curso}
+                        value={curso}
+                      >
+                        {curso}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[10px] font-black uppercase text-cyan-300">
+                  TURMA
+                </label>
+
+                <input
+                  value={novaTurma}
+                  onChange={(e) =>
+                    setNovaTurma(e.target.value)
+                  }
+                  placeholder="Ex: T01"
+                  className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[10px] font-black uppercase text-cyan-300">
+                  TURMA INGLÊS
+                </label>
+
+                <input
+                  value={novaTurmaIngles}
+                  onChange={(e) =>
+                    setNovaTurmaIngles(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Ex: ING-02"
+                  className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  onClick={salvarEdicaoLote}
+                  className="w-full rounded-md bg-cyan-600 px-5 py-2 text-xs font-black text-white hover:bg-cyan-500"
+                >
+                  SALVAR EM LOTE
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
           <div className="min-w-[1400px]">
-            <div className="grid grid-cols-[110px_120px_140px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
-              <div className="border-r border-[#12375f] p-3">Status</div>
+            <div className="grid grid-cols-[110px_120px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
+              <div className="border-r border-[#12375f] p-3">
+                Status
+              </div>
+
               <div className="border-r border-[#12375f] p-3">
                 Data cadastro
               </div>
+
               <div className="border-r border-[#12375f] p-3">
-                Turma
+                TURMA
               </div>
+
               <div className="border-r border-[#12375f] p-3">
                 ID do aluno
               </div>
+
               <div className="border-r border-[#12375f] p-3">
                 Nome completo
               </div>
-              <div className="border-r border-[#12375f] p-3">Cidade</div>
+
+              <div className="border-r border-[#12375f] p-3">
+                Cidade
+              </div>
+
               <div className="border-r border-[#12375f] p-3">
                 Tel. responsável
               </div>
+
               <div className="border-r border-[#12375f] p-3">
                 Tel. aluno
               </div>
+
               <div className="border-r border-[#12375f] p-3">
                 Curso contratado
               </div>
-              <div className="p-3 text-center">Ações</div>
+
+              <div className="p-3 text-center">
+                Ações
+              </div>
             </div>
 
             {filtrados.map((aluno) => (
               <a
                 key={aluno["ID"]}
                 href={`/aluno/${aluno["ID"]}`}
-                className="grid min-h-[52px] grid-cols-[110px_120px_140px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+                className="grid min-h-[52px] grid-cols-[110px_120px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
               >
                 <div
                   className="flex items-center border-r border-[#12375f] p-3"
@@ -578,15 +758,18 @@ export default function GerenciamentoPage() {
                           ? "CANCELADO"
                           : "ATIVO";
 
-                      const { error } = await supabase
-                        .from("backup alunos")
-                        .update({
-                          STATUS: novoStatus,
-                        })
-                        .eq("ID", aluno["ID"]);
+                      const { error } =
+                        await supabase
+                          .from("backup alunos")
+                          .update({
+                            STATUS: novoStatus,
+                          })
+                          .eq("ID", aluno["ID"]);
 
                       if (error) {
-                        alert("Erro ao atualizar status.");
+                        alert(
+                          "Erro ao atualizar status."
+                        );
                         console.error(error);
                         return;
                       }
@@ -603,12 +786,18 @@ export default function GerenciamentoPage() {
                       );
                     }}
                     className={`min-w-[86px] rounded-md px-3 py-1 text-[10px] font-black transition-all ${
-                      aluno["STATUS"] === "CANCELADO"
+                      aluno["Excluido"] === true
+                        ? "bg-red-950 text-red-300"
+                        : aluno["STATUS"] ===
+                          "CANCELADO"
                         ? "bg-red-600 text-white"
                         : "bg-green-600 text-white"
                     }`}
                   >
-                    {aluno["STATUS"] || "ATIVO"}
+                    {aluno["Excluido"] === true
+                      ? "EXCLUÍDO"
+                      : aluno["STATUS"] ||
+                        "ATIVO"}
                   </button>
                 </div>
 
@@ -616,7 +805,7 @@ export default function GerenciamentoPage() {
                   {aluno["Data Cadastro"] || "-"}
                 </div>
 
-                <div className="flex items-center border-r border-[#12375f] p-3 text-yellow-300">
+                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
                   {aluno["TURMA"] || "-"}
                 </div>
 
@@ -633,11 +822,15 @@ export default function GerenciamentoPage() {
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {formatarTelefone(aluno["Tel. Resp"])}
+                  {formatarTelefone(
+                    aluno["Tel. Resp"]
+                  )}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
-                  {formatarTelefone(aluno["Tel. Aluno"])}
+                  {formatarTelefone(
+                    aluno["Tel. Aluno"]
+                  )}
                 </div>
 
                 <div className="flex items-center border-r border-[#12375f] p-3">
