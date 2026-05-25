@@ -3,167 +3,44 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 
-const cursosTags = [
-  "PREPARATÓRIO JOVEM BANCÁRIO",
-  "PREPARATÓRIO AGRO",
-  "JOVEM NO DIREITO",
-  "INGLÊS",
-  "PRÉ MILITAR",
-  "ADMINISTRATIVO",
-  "INFORMÁTICA",
-  "PREPARATÓRIO ENCCEJA",
-  "JOVEM NA AVIAÇÃO",
-  "TECNOLOGIA",
-];
-
-const tagsIniciais: any = {
-  tags: {},
-  last_selection: {},
-  turma_ingles_subir: "",
-};
-
-function limparValor(valor: any) {
-  if (valor === null || valor === undefined) return "";
-  if (String(valor).toLowerCase() === "null") return "";
-  return String(valor);
+function converterDataBR(data?: string) {
+  if (!data) return 0;
+  const partes = String(data).split("/");
+  if (partes.length !== 3) return 0;
+  const [dia, mes, ano] = partes;
+  return new Date(`${ano}-${mes}-${dia}`).getTime();
 }
 
-function normalizarChave(chave: string) {
-  return chave
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toUpperCase();
+function isoParaBR(dataISO: string) {
+  if (!dataISO) return "";
+  const [ano, mes, dia] = dataISO.split("-");
+  return `${dia}/${mes}/${ano}`;
 }
 
-function pegarCPF(a: any) {
-  if (!a) return "";
-  const chaveCPF = Object.keys(a).find((chave) => normalizarChave(chave) === "CPF");
-  if (!chaveCPF) return "";
-  return limparValor(a[chaveCPF]);
+function ordenarAlunos(a: any, b: any) {
+  const ordemA = Number(a["Ordem"] || 0);
+  const ordemB = Number(b["Ordem"] || 0);
+  if (ordemA !== ordemB) return ordemB - ordemA;
+
+  const dataA = converterDataBR(a["Data Cadastro"]);
+  const dataB = converterDataBR(b["Data Cadastro"]);
+  if (dataA !== dataB) return dataB - dataA;
+
+  return Number(b["ID"] || 0) - Number(a["ID"] || 0);
 }
 
-type OpcaoCidade = {
-  nome: string;
-  uf: string;
-  codigo: string;
-};
-
-type PendenciaCidade = {
-  chave: string;
-  cidadeOriginal: string;
-  opcoes: OpcaoCidade[];
-};
-
-function normalizarCidade(valor: any) {
-  return limparValor(valor)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-}
-
-function pegarValorPorPossiveisColunas(linha: any, possiveis: string[]) {
-  const chaves = Object.keys(linha || {});
-
-  const encontrada = chaves.find((chave) =>
-    possiveis.includes(normalizarChave(chave))
-  );
-
-  return encontrada ? limparValor(linha[encontrada]) : "";
-}
-
-function montarMapaCidades(linhas: any[]) {
-  const mapa: Record<string, OpcaoCidade[]> = {};
-
-  linhas.forEach((linha) => {
-    const nome =
-      pegarValorPorPossiveisColunas(linha, [
-        "NOME DA CIDADE",
-        "CIDADE",
-        "NOME",
-        "NOME CIDADE",
-        "NOME_CIDADE",
-        "MUNICIPIO",
-        "MUNICÍPIO",
-      ]) || "";
-
-    const uf =
-      pegarValorPorPossiveisColunas(linha, [
-        "ESTADO",
-        "UF",
-        "SIGLA",
-        "SIGLA UF",
-        "SIGLA_UF",
-      ]) || "";
-
-    const codigo =
-      pegarValorPorPossiveisColunas(linha, [
-        "CÓDIGO",
-        "CODIGO",
-        "COD",
-        "COD CIDADE",
-        "CODIGO CIDADE",
-        "CÓDIGO CIDADE",
-        "CODIGO_CIDADE",
-        "IBGE",
-        "CODIGO IBGE",
-        "CÓDIGO IBGE",
-      ]) || "";
-
-    const chave = normalizarCidade(nome);
-
-    if (!chave || !codigo) return;
-
-    if (!mapa[chave]) mapa[chave] = [];
-
-    const jaExiste = mapa[chave].some(
-      (opcao) => opcao.codigo === codigo && opcao.uf === limparValor(uf).toUpperCase()
-    );
-
-    if (!jaExiste) {
-      mapa[chave].push({
-        nome: limparValor(nome).toUpperCase(),
-        uf: limparValor(uf).toUpperCase(),
-        codigo: limparValor(codigo),
-      });
-    }
-  });
-
-  return mapa;
-}
-
-export default function SubirAlunosPage() {
+export default function GerenciamentoPage() {
   const router = useRouter();
   const [carregandoLogin, setCarregandoLogin] = useState(true);
 
-  const [modo, setModo] = useState("AUTOMÁTICO");
-  const [dados, setDados] = useState<any[]>([]);
-  const [dataFiltro, setDataFiltro] = useState("");
-  const [cidadesSelecionadas, setCidadesSelecionadas] = useState<string[]>([]);
-  const [turmaIngles, setTurmaIngles] = useState("");
-  const [dadosTags, setDadosTags] = useState<any>(tagsIniciais);
-  const [dfFinal, setDfFinal] = useState<any[] | null>(null);
-  const [mapaCidades, setMapaCidades] = useState<Record<string, OpcaoCidade[]>>({});
-  const [erroMapaCidades, setErroMapaCidades] = useState("");
-  const [escolhasCidade, setEscolhasCidade] = useState<Record<string, OpcaoCidade>>({});
-  const [pendenciasCidade, setPendenciasCidade] = useState<PendenciaCidade[]>([]);
-  const [rawProcessado, setRawProcessado] = useState<any[]>([]);
-
-  const [manual, setManual] = useState({
-    ids: "",
-    nomes: "",
-    celulares: "",
-    documentos: "",
-    cidades: "",
-    cursos: "",
-    pagamentos: "",
-    vendedores: "",
-    datas: "",
-  });
+  const [alunos, setAlunos] = useState<any[]>([]);
+  const [pesquisa, setPesquisa] = useState("");
+  const [mostrarDownload, setMostrarDownload] = useState(false);
+  const [dataDownload, setDataDownload] = useState("");
+  const [cidadeDownload, setCidadeDownload] = useState("TODAS");
+  const [mostrarExcluidos, setMostrarExcluidos] = useState(false);
 
   useEffect(() => {
     async function verificarLogin() {
@@ -183,352 +60,210 @@ export default function SubirAlunosPage() {
   useEffect(() => {
     if (carregandoLogin) return;
 
-    const salvo = localStorage.getItem("dados_tags_subir");
-    if (salvo) {
-      const obj = JSON.parse(salvo);
-      setDadosTags(obj);
-      setTurmaIngles(obj.turma_ingles_subir || "");
-    }
-
-    async function buscar() {
+    async function buscarTodosAlunos() {
       let todos: any[] = [];
-      let i = 0;
+      let inicio = 0;
+      const tamanho = 1000;
 
       while (true) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("backup alunos")
           .select("*")
-          .range(i, i + 999);
+          .range(inicio, inicio + tamanho - 1);
+
+        if (error) {
+          console.error("Erro Supabase:", error);
+          break;
+        }
 
         if (!data || data.length === 0) break;
 
         todos = [...todos, ...data];
 
-        if (data.length < 1000) break;
-        i += 1000;
+        if (data.length < tamanho) break;
+
+        inicio += tamanho;
       }
 
-      setDados(todos);
+      setAlunos(
+        todos
+          .filter((a) => a["ID"] && a["Aluno"])
+          .sort(ordenarAlunos)
+      );
     }
 
-    buscar();
+    buscarTodosAlunos();
   }, [carregandoLogin]);
 
-  useEffect(() => {
-    if (carregandoLogin) return;
+  const filtrados = useMemo(() => {
+    const termo = pesquisa.trim().toLowerCase();
 
-    async function carregarCidades() {
-      try {
-        setErroMapaCidades("");
+    return alunos
+      .filter((a) => {
+        const excluido = a["Excluido"] === true;
 
-        const response = await fetch("/cidades.xlsx");
-
-        if (!response.ok) {
-          setErroMapaCidades("Arquivo cidades.xlsx não encontrado em /public/cidades.xlsx");
-          return;
+        if (mostrarExcluidos) {
+          if (!excluido) return false;
+        } else {
+          if (excluido) return false;
         }
 
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: "array" });
-        const primeiraAba = workbook.SheetNames[0];
+        if (!termo) return true;
 
-        if (!primeiraAba) {
-          setErroMapaCidades("Arquivo cidades.xlsx não possui abas.");
-          return;
-        }
-
-        const sheet = workbook.Sheets[primeiraAba];
-        const linhas: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        const mapa = montarMapaCidades(linhas);
-
-        setMapaCidades(mapa);
-      } catch (error) {
-        console.error("Erro ao carregar cidades.xlsx:", error);
-        setErroMapaCidades("Erro ao carregar cidades.xlsx.");
-      }
-    }
-
-    carregarCidades();
-  }, [carregandoLogin]);
-
-  function salvarTags(novo: any) {
-    setDadosTags(novo);
-    localStorage.setItem("dados_tags_subir", JSON.stringify(novo));
-  }
-
-  function dataBRparaISO(data?: string) {
-    if (!data) return "";
-    const partes = String(data).split("/");
-    if (partes.length !== 3) return "";
-    return `${partes[2]}-${partes[1]}-${partes[0]}`;
-  }
-
-  const autoFiltrado = useMemo(() => {
-    if (!dataFiltro) return [];
-    return dados.filter((a) => dataBRparaISO(a["Data Cadastro"]) === dataFiltro);
-  }, [dados, dataFiltro]);
-
-  const cidadesDisponiveis = useMemo(() => {
-    return Array.from(new Set(autoFiltrado.map((a) => a.Cidade).filter(Boolean))).sort();
-  }, [autoFiltrado]);
-
-  const dfAutoReady = useMemo(() => {
-    return autoFiltrado.filter((a) => cidadesSelecionadas.includes(a.Cidade));
-  }, [autoFiltrado, cidadesSelecionadas]);
-
-  function toggleCidade(cidade: string) {
-    setCidadesSelecionadas((prev) =>
-      prev.includes(cidade) ? prev.filter((c) => c !== cidade) : [...prev, cidade]
-    );
-  }
-
-  function atualizarTag(curso: string, valor: string) {
-    salvarTags({
-      ...dadosTags,
-      last_selection: {
-        ...dadosTags.last_selection,
-        [curso]: valor,
-      },
-    });
-  }
-
-  function adicionarTag(curso: string, valor: string) {
-    if (!valor.trim()) return;
-
-    const tag = valor.trim().toUpperCase();
-    const listaAtual = dadosTags.tags?.[curso] || [];
-
-    if (listaAtual.includes(tag)) return;
-
-    salvarTags({
-      ...dadosTags,
-      tags: {
-        ...dadosTags.tags,
-        [curso]: [...listaAtual, tag],
-      },
-      last_selection: {
-        ...dadosTags.last_selection,
-        [curso]: tag,
-      },
-    });
-  }
-
-  function removerTag(curso: string) {
-    const selecionada = dadosTags.last_selection?.[curso];
-    if (!selecionada) return;
-
-    const listaAtual = dadosTags.tags?.[curso] || [];
-
-    salvarTags({
-      ...dadosTags,
-      tags: {
-        ...dadosTags.tags,
-        [curso]: listaAtual.filter((t: string) => t !== selecionada),
-      },
-      last_selection: {
-        ...dadosTags.last_selection,
-        [curso]: "",
-      },
-    });
-  }
-
-
-  function resolverCidadeParaCity2(cidadeOriginal: any, pendencias: Record<string, PendenciaCidade>) {
-    const cidadeLimpa = limparValor(cidadeOriginal).trim();
-    const chave = normalizarCidade(cidadeLimpa);
-
-    if (!chave) return "";
-
-    const opcoes = mapaCidades[chave] || [];
-
-    if (opcoes.length === 1) {
-      return opcoes[0].codigo;
-    }
-
-    if (opcoes.length > 1) {
-      const escolha = escolhasCidade[chave];
-
-      if (escolha) {
-        return escolha.codigo;
-      }
-
-      pendencias[chave] = {
-        chave,
-        cidadeOriginal: cidadeLimpa.toUpperCase(),
-        opcoes,
-      };
-
-      return cidadeLimpa.toUpperCase();
-    }
-
-    return cidadeLimpa.toUpperCase();
-  }
-
-  function gerarDfFinal(rawList: any[]) {
-    const pendenciasEncontradas: Record<string, PendenciaCidade> = {};
-
-    const processed = rawList.map((item) => {
-      const cOrig = String(item.Cour || "").toUpperCase();
-      const pOrig = String(item.Pay || "").toUpperCase();
-
-      const encontrados: any[] = [];
-
-      cursosTags.forEach((k) => {
-        const tagSelecionada = dadosTags.last_selection?.[k];
-        if (cOrig.includes(k) && tagSelecionada) {
-          encontrados.push([cOrig.indexOf(k), tagSelecionada]);
-        }
-      });
-
-      encontrados.sort((a, b) => a[0] - b[0]);
-
-      const tagsFinais = encontrados.map((e) => e[1]);
-      const cursoFinal = tagsFinais.length ? tagsFinais.join(",").toUpperCase() : cOrig;
-
-      let pagamentoFinal = "PENDENTE";
-
-      if (pOrig.includes("BOLETO") && !pOrig.includes("CARTÃO") && !pOrig.includes("LINK")) {
-        pagamentoFinal = "BOLETO";
-      } else if ((pOrig.includes("CARTÃO") || pOrig.includes("LINK")) && !pOrig.includes("BOLETO")) {
-        pagamentoFinal = "CARTÃO";
-      }
-
-      const partesNome = String(item.Nome || "").trim().split(/\s+/, 2);
-      const primeiroNome = partesNome[0]?.toUpperCase() || "";
-      const sobrenome = String(item.Nome || "")
-        .trim()
-        .replace(partesNome[0] || "", "")
-        .trim()
-        .toUpperCase();
-
-      let observacao = `${cursoFinal} | ${cOrig} | ${pOrig}`.toUpperCase();
-
-      if (turmaIngles) {
-        observacao = observacao.replace(
-          "PLATAFORMAANTIGA",
-          `PLATAFORMAANTIGA ${turmaIngles}`
+        return Object.values(a).some((valor) =>
+          String(valor || "").toLowerCase().includes(termo)
         );
-      }
+      })
+      .sort(ordenarAlunos);
+  }, [alunos, pesquisa, mostrarExcluidos]);
 
-      return {
-        username: limparValor(item.User),
-        email2: `${limparValor(item.User)}@profissionalizaead.com.br`,
-        name: primeiroNome,
-        lastname: sobrenome,
-        cellphone2: limparValor(item.Cell),
-        document: limparValor(item.Doc),
-        city2: resolverCidadeParaCity2(item.City, pendenciasEncontradas),
-        courses: cursoFinal,
-        payment: pagamentoFinal,
-        observation: observacao,
-        ouro: cOrig.includes("10 CURSOS") ? "1" : "0",
-        password: "futuro",
-        role: "1",
-        secretary: "MGA",
-        seller: limparValor(item.Sell),
-        contract_date: limparValor(item.Date),
-        active: "1",
-      };
-    });
+  const cidadesDisponiveisDownload = useMemo(() => {
+    if (!dataDownload) return [];
 
-    setPendenciasCidade(Object.values(pendenciasEncontradas));
-    setDfFinal(processed);
-  }
+    const dataBR = isoParaBR(dataDownload);
 
-  function processarDados() {
-    let rawList: any[] = [];
-
-    if (modo === "MANUAL") {
-      const ids = manual.ids.trim().split("\n");
-      const nomes = manual.nomes.trim().split("\n");
-      const celulares = manual.celulares.trim().split("\n");
-      const documentos = manual.documentos.trim().split("\n");
-      const cidades = manual.cidades.trim().split("\n");
-      const cursos = manual.cursos.trim().split("\n");
-      const pagamentos = manual.pagamentos.trim().split("\n");
-      const vendedores = manual.vendedores.trim().split("\n");
-      const datas = manual.datas.trim().split("\n");
-
-      for (let i = 0; i < ids.length; i++) {
-        rawList.push({
-          User: ids[i] || "",
-          Nome: nomes[i] || "",
-          Cell: celulares[i] || "",
-          Doc: documentos[i] || "",
-          City: cidades[i] || "",
-          Cour: cursos[i] || "",
-          Pay: pagamentos[i] || "",
-          Sell: vendedores[i] || "",
-          Date: datas[i] || "",
-        });
-      }
-    } else {
-      rawList = dfAutoReady.map((r) => ({
-        User: limparValor(r["ID"]),
-        Nome: limparValor(r["Aluno"]),
-        Cell: limparValor(r["Tel. Aluno"]),
-        Doc: pegarCPF(r),
-        City: limparValor(r["Cidade"]),
-        Cour: limparValor(r["Curso"]),
-        Pay: limparValor(r["Pagamento"]),
-        Sell: limparValor(r["Vendedor"]),
-        Date: limparValor(r["Data Matricula"] || r["Data Matrícula"]),
-      }));
-    }
-
-    setRawProcessado(rawList);
-    gerarDfFinal(rawList);
-  }
-
-  useEffect(() => {
-    if (rawProcessado.length === 0) return;
-    gerarDfFinal(rawProcessado);
-  }, [escolhasCidade]);
-  function selecionarCidadeDuplicada(chave: string, opcao: OpcaoCidade) {
-    setEscolhasCidade((prev) => ({
-      ...prev,
-      [chave]: opcao,
-    }));
-  }
-
-  function atualizarFormaPendente(username: string, forma: string) {
-    setDfFinal((prev) =>
-      (prev || []).map((item) =>
-        item.username === username ? { ...item, payment: forma } : item
+    const cidades = alunos
+      .filter(
+        (a) =>
+          String(a["Data Cadastro"] || "") === dataBR &&
+          a["Excluido"] !== true
       )
+      .map((a) => String(a["Cidade"] || "").trim())
+      .filter(Boolean);
+
+    return Array.from(new Set(cidades)).sort((a, b) =>
+      a.localeCompare(b, "pt-BR")
     );
-  }
-
-  function baixarCidade(cidade: string) {
-    if (!dfFinal) return;
-
-    const dadosCidade = dfFinal.filter((d) => d.city2 === cidade);
-    const ws = XLSX.utils.json_to_sheet(dadosCidade);
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, "Alunos");
-    XLSX.writeFile(wb, `${cidade}.xlsx`);
-  }
-
-  function limparTudo() {
-    setDfFinal(null);
-    setCidadesSelecionadas([]);
-    setManual({
-      ids: "",
-      nomes: "",
-      celulares: "",
-      documentos: "",
-      cidades: "",
-      cursos: "",
-      pagamentos: "",
-      vendedores: "",
-      datas: "",
-    });
-  }
+  }, [alunos, dataDownload]);
 
   async function sair() {
     await supabase.auth.signOut();
     router.push("/login");
+  }
+
+  function baixarAlunosPorData() {
+    if (!dataDownload) {
+      alert("Selecione uma data.");
+      return;
+    }
+
+    const dataBR = isoParaBR(dataDownload);
+
+    let alunosDaData = alunos
+      .filter(
+        (a) =>
+          String(a["Data Cadastro"] || "") === dataBR &&
+          a["Excluido"] !== true
+      )
+      .sort(ordenarAlunos)
+      .reverse();
+
+    if (cidadeDownload !== "TODAS") {
+      alunosDaData = alunosDaData.filter(
+        (a) => String(a["Cidade"] || "").trim() === cidadeDownload
+      );
+    }
+
+    if (alunosDaData.length === 0) {
+      alert("Nenhum aluno encontrado nessa data/cidade.");
+      return;
+    }
+
+    const colunasPreferidas = [
+      "STATUS",
+      "SEC",
+      "TURMA",
+      "10 CURSOS?",
+      "INGLÊS?",
+      "Data Cadastro",
+      "ID",
+      "Aluno",
+      "Tel. Resp",
+      "Tel. Aluno",
+      "CPF",
+      "Cidade",
+      "Curso",
+      "Pagamento",
+      "Vendedor",
+      "Data Matricula",
+      "Data Matrícula",
+      "Excluido",
+      "Excluido_em",
+    ];
+
+    const todasColunasEncontradas = Array.from(
+      new Set(alunosDaData.flatMap((aluno) => Object.keys(aluno)))
+    ).filter((coluna) => coluna !== "Ordem");
+
+    const colunas = [
+      ...colunasPreferidas.filter((coluna) =>
+        todasColunasEncontradas.includes(coluna)
+      ),
+      ...todasColunasEncontradas.filter(
+        (coluna) => !colunasPreferidas.includes(coluna)
+      ),
+    ];
+
+    const linhas = alunosDaData.map((a) =>
+      colunas.map((coluna) => String(a[coluna] ?? ""))
+    );
+
+    const ws = XLSX.utils.aoa_to_sheet([colunas, ...linhas]);
+
+    ws["!cols"] = colunas.map((coluna) => {
+      if (coluna === "Aluno") return { wch: 38 };
+      if (coluna === "Curso") return { wch: 50 };
+      if (coluna === "Pagamento") return { wch: 45 };
+      if (coluna === "Vendedor") return { wch: 25 };
+      if (coluna === "CPF") return { wch: 18 };
+      if (coluna.includes("Data")) return { wch: 18 };
+      if (coluna.includes("Tel")) return { wch: 18 };
+      return { wch: 16 };
+    });
+
+    colunas.forEach((_, colIndex) => {
+      const celula = `${XLSX.utils.encode_col(colIndex)}1`;
+
+      if (ws[celula]) {
+        ws[celula].s = {
+          font: { bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "0C2743" } },
+          alignment: { horizontal: "center" },
+        };
+      }
+    });
+
+    alunosDaData.forEach((aluno, index) => {
+      const curso = String(aluno["Curso"] || "").toUpperCase();
+
+      if (curso.includes("TECNOLOGIA")) {
+        const linhaExcel = index + 2;
+        const colunaCurso = colunas.indexOf("Curso");
+        const celulaCurso = `${XLSX.utils.encode_col(colunaCurso)}${linhaExcel}`;
+
+        if (ws[celulaCurso]) {
+          ws[celulaCurso].s = {
+            font: {
+              color: { rgb: "FF0000" },
+              bold: true,
+            },
+          };
+        }
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Alunos");
+
+    const cidadeNome =
+      cidadeDownload === "TODAS"
+        ? "TODAS_AS_CIDADES"
+        : cidadeDownload.replace(/[\\/:*?"<>|]/g, "-");
+
+    XLSX.writeFile(
+      wb,
+      `ALUNOS_${dataBR.replaceAll("/", "-")}_${cidadeNome}.xlsx`
+    );
   }
 
   if (carregandoLogin) {
@@ -539,16 +274,12 @@ export default function SubirAlunosPage() {
     );
   }
 
-  const pendentes = dfFinal?.filter((d) => d.payment === "PENDENTE") || [];
-  const pronto = dfFinal && pendentes.length === 0 && pendenciasCidade.length === 0;
-  const cidadesDownload = Array.from(new Set((dfFinal || []).map((d) => d.city2)));
-
   return (
     <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
       <div className="fixed left-0 top-0 z-50 flex h-[58px] w-full items-center gap-2 overflow-x-auto bg-[#edbe13] px-2 md:h-[38px] md:justify-center">
         {[
           ["📑 CADASTRO", "/cadastro"],
-          ["🖥️ GERENCIAMENTO", "/"],
+          ["🖥️ GERENCIAMENTO", "/gerenciamento"],
           ["📊 RELATÓRIOS", "/relatorios"],
           ["📤 SUBIR ALUNOS", "/subir-alunos"],
           ["📤 SUBIR ALUNOS DE INGLÊS", "/subir-alunos-ingles"],
@@ -558,7 +289,7 @@ export default function SubirAlunosPage() {
             key={tab}
             href={href}
             className={`shrink-0 rounded-md border px-5 py-2 text-xs font-bold md:py-1 ${
-              tab === "📤 SUBIR ALUNOS"
+              tab.includes("GERENCIAMENTO")
                 ? "border-cyan-300 bg-cyan-300 text-black shadow-[0_0_10px_rgba(0,242,255,.6)]"
                 : "border-slate-700/30 bg-white/20 text-[#1f295a]"
             }`}
@@ -575,326 +306,168 @@ export default function SubirAlunosPage() {
         </button>
       </div>
 
-      <section className="px-4 pt-20 md:px-8 md:pt-16">
-        <h1 className="mb-5 text-xl font-black text-white">📤 IMPORTAÇÃO EAD</h1>
+      <section className="px-4 pt-20 md:px-8 md:pt-14">
+        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-lg font-black text-white">
+              {mostrarExcluidos ? "♻ ALUNOS EXCLUÍDOS" : "▣ LISTAGEM DE ALUNOS"}
+            </h1>
 
-        <div className="rounded-xl border border-[#12375f] bg-[#071b31] p-5 shadow-2xl">
-          <div className="mb-5 flex items-center gap-8">
-            <span className="text-xs font-black text-cyan-300">Método:</span>
-
-            {["MANUAL", "AUTOMÁTICO"].map((m) => (
-              <label key={m} className="flex cursor-pointer items-center gap-2 text-xs font-black">
-                <input type="radio" checked={modo === m} onChange={() => setModo(m)} />
-                {m}
-              </label>
-            ))}
-          </div>
-
-          <Campo
-            label="Turma de Inglês desses alunos:"
-            value={turmaIngles}
-            placeholder="Ex: ING32"
-            onChange={(v: string) => {
-              const valor = v.toUpperCase();
-              setTurmaIngles(valor);
-              salvarTags({ ...dadosTags, turma_ingles_subir: valor });
-            }}
-          />
-
-          <div className="mb-4 rounded-md border border-cyan-900 bg-[#0b1f36] p-3 text-xs font-bold text-cyan-300">
-            {erroMapaCidades ? (
-              <span className="text-red-300">{erroMapaCidades}</span>
-            ) : (
-              <span>
-                Mapa de cidades carregado: {Object.keys(mapaCidades).length} nomes encontrados.
-              </span>
-            )}
-          </div>
-
-          {modo === "AUTOMÁTICO" ? (
-            <div className="mt-5">
-              <Campo
-                label="Filtrar Cadastro (Coluna F):"
-                value={dataFiltro}
-                type="date"
-                onChange={setDataFiltro}
-              />
-
-              {cidadesDisponiveis.length > 0 && (
-                <div className="mt-4">
-                  <div className="mb-2 text-xs font-black text-cyan-300">Cidades:</div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {cidadesDisponiveis.map((cidade) => (
-                      <button
-                        key={cidade}
-                        onClick={() => toggleCidade(cidade)}
-                        className={`rounded-md border px-3 py-2 text-xs font-bold ${
-                          cidadesSelecionadas.includes(cidade)
-                            ? "border-cyan-300 bg-cyan-300 text-black"
-                            : "border-[#1f5b91] bg-[#0b1f36] text-cyan-100"
-                        }`}
-                      >
-                        {cidade}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="mt-3 rounded-md border border-cyan-900 bg-[#0b1f36] p-3 text-sm font-bold text-cyan-300">
-                    {dfAutoReady.length} alunos encontrados.
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="mt-5 grid grid-cols-2 gap-5">
-              <BlocoManual label="IDs" value={manual.ids} onChange={(v: string) => setManual({ ...manual, ids: v })} />
-              <BlocoManual label="Nomes" value={manual.nomes} onChange={(v: string) => setManual({ ...manual, nomes: v })} />
-              <BlocoManual label="Celulares" value={manual.celulares} onChange={(v: string) => setManual({ ...manual, celulares: v })} />
-              <BlocoManual label="Documentos" value={manual.documentos} onChange={(v: string) => setManual({ ...manual, documentos: v })} />
-              <BlocoManual label="Cidades" value={manual.cidades} onChange={(v: string) => setManual({ ...manual, cidades: v })} />
-              <BlocoManual label="Cursos" value={manual.cursos} onChange={(v: string) => setManual({ ...manual, cursos: v })} />
-              <BlocoManual label="Pagamentos" value={manual.pagamentos} onChange={(v: string) => setManual({ ...manual, pagamentos: v })} />
-              <BlocoManual label="Vendedores" value={manual.vendedores} onChange={(v: string) => setManual({ ...manual, vendedores: v })} />
-              <BlocoManual label="Datas" value={manual.datas} onChange={(v: string) => setManual({ ...manual, datas: v })} />
-            </div>
-          )}
-        </div>
-
-        <details className="mt-6 rounded-xl border border-[#12375f] bg-[#071b31] p-5 shadow-2xl">
-          <summary className="cursor-pointer text-sm font-black text-cyan-300">
-            🛠️ CONFIGURAR TAGS
-          </summary>
-
-          <div className="mt-5 grid grid-cols-3 gap-5">
-            {cursosTags.map((curso) => {
-              const lista = dadosTags.tags?.[curso] || [];
-              const atual = dadosTags.last_selection?.[curso] || "";
-
-              return (
-                <div key={curso} className="rounded-lg border border-[#12375f] bg-[#0b1f36] p-3">
-                  <div className="mb-2 text-[10px] font-black text-cyan-300">{curso}</div>
-
-                  <div className="flex gap-2">
-                    <select
-                      value={atual}
-                      onChange={(e) => atualizarTag(curso, e.target.value)}
-                      className="w-full rounded bg-white p-2 text-xs font-bold text-black"
-                    >
-                      <option value=""></option>
-                      {lista.map((tag: string) => (
-                        <option key={tag} value={tag}>{tag}</option>
-                      ))}
-                    </select>
-
-                    <button
-                      onClick={() => removerTag(curso)}
-                      className="rounded bg-red-900 px-3 text-xs font-bold text-red-100"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-
-                  <input
-                    placeholder="Nova..."
-                    onKeyDown={(e: any) => {
-                      if (e.key === "Enter") {
-                        adicionarTag(curso, e.currentTarget.value);
-                        e.currentTarget.value = "";
-                      }
-                    }}
-                    className="mt-2 w-full rounded bg-white p-2 text-xs font-bold text-black"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </details>
-
-        <button
-          onClick={processarDados}
-          className="mt-6 w-full rounded-md bg-cyan-400 px-6 py-3 text-sm font-black text-black hover:bg-cyan-300"
-        >
-          🚀 PROCESSAR DADOS
-        </button>
-
-        {pendenciasCidade.length > 0 && (
-          <div className="mt-6 rounded-xl border border-yellow-600 bg-[#2b2507] p-5 shadow-2xl">
-            <h2 className="mb-2 text-sm font-black text-yellow-300">
-              ⚠️ Selecione a cidade correta
-            </h2>
-
-            <p className="mb-4 text-xs font-bold text-yellow-100">
-              Algumas cidades possuem o mesmo nome em estados diferentes. Selecione a opção correta para liberar o download da planilha.
+            <p className="text-xs text-cyan-300">
+              {filtrados.length} registros encontrados
             </p>
-
-            <div className="space-y-4">
-              {pendenciasCidade.map((pendencia) => (
-                <div
-                  key={pendencia.chave}
-                  className="rounded-lg border border-yellow-800 bg-[#0b1f36] p-4"
-                >
-                  <div className="mb-3 text-sm font-black text-yellow-300">
-                    {pendencia.cidadeOriginal}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {pendencia.opcoes.map((opcao) => (
-                      <button
-                        key={`${opcao.codigo}-${opcao.uf}`}
-                        onClick={() => selecionarCidadeDuplicada(pendencia.chave, opcao)}
-                        className="rounded-md border border-cyan-300 bg-cyan-300 px-4 py-2 text-xs font-black text-black hover:bg-cyan-200"
-                      >
-                        {opcao.nome} {opcao.uf ? `- ${opcao.uf}` : ""} | Cód. {opcao.codigo}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
-        )}
 
-        {dfFinal && dfFinal.length > 0 && (
-          <div className="mt-6 rounded-xl border border-[#12375f] bg-[#071b31] p-5 shadow-2xl">
-            <h2 className="mb-4 text-sm font-black text-cyan-300">
-              👁️ PRÉ-VISUALIZAÇÃO GERAL ({dfFinal.length} ALUNOS)
-            </h2>
-
-            <div className="overflow-auto rounded-lg border border-[#12375f]">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#0c2743] text-cyan-300">
-                  <tr>
-                    {Object.keys(dfFinal[0]).map((k) => (
-                      <th key={k} className="whitespace-nowrap p-2">
-                        {k}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {dfFinal.map((linha, i) => (
-                    <tr key={i} className="border-t border-[#12375f]">
-                      {Object.values(linha).map((v: any, j) => (
-                        <td
-                          key={j}
-                          className={`whitespace-nowrap p-2 ${
-                            Object.keys(linha)[j] === "document" && !limparValor(v)
-                              ? "bg-red-950 text-red-300"
-                              : ""
-                          }`}
-                        >
-                          {limparValor(v)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {pendentes.length > 0 && (
-          <div className="mt-6 rounded-xl border border-yellow-600 bg-[#2b2507] p-5">
-            <h2 className="mb-3 text-sm font-black text-yellow-300">
-              ⚠️ Confirmação necessária
-            </h2>
-
-            <div className="overflow-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-left text-yellow-300">
-                    <th className="p-2">ID</th>
-                    <th className="p-2">Nome</th>
-                    <th className="p-2">Texto Original</th>
-                    <th className="p-2">Forma Final</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {pendentes.map((p) => (
-                    <tr key={p.username} className="border-t border-yellow-900">
-                      <td className="p-2">{p.username}</td>
-                      <td className="p-2">{p.name}</td>
-                      <td className="p-2">{p.observation}</td>
-                      <td className="p-2">
-                        <select
-                          value={p.payment}
-                          onChange={(e) => atualizarFormaPendente(p.username, e.target.value)}
-                          className="rounded bg-white p-2 text-black"
-                        >
-                          <option value="PENDENTE">PENDENTE</option>
-                          <option value="BOLETO">BOLETO</option>
-                          <option value="CARTÃO">CARTÃO</option>
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {pronto && (
-          <div className="mt-6 rounded-xl border border-[#12375f] bg-[#071b31] p-5 shadow-2xl">
-            <h2 className="mb-4 text-sm font-black text-cyan-300">
-              📄 PLANILHAS PRONTAS PARA DOWNLOAD
-            </h2>
-
-            <div className="grid grid-cols-3 gap-3">
-              {cidadesDownload.map((cidade: any) => (
-                <button
-                  key={cidade}
-                  onClick={() => baixarCidade(cidade)}
-                  className="rounded-md bg-green-700 px-4 py-3 text-xs font-black text-white hover:bg-green-600"
-                >
-                  📥 BAIXAR PLANILHA: {cidade}
-                </button>
-              ))}
-            </div>
+          <div className="flex w-full flex-col gap-3 lg:w-[760px] lg:flex-row lg:items-center">
+            <input
+              value={pesquisa}
+              onChange={(e) => setPesquisa(e.target.value)}
+              placeholder="Pesquisar por nome, ID, cidade, telefone, curso, status..."
+              className="w-full rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
+            />
 
             <button
-              onClick={limparTudo}
-              className="mt-5 w-full rounded-md border border-cyan-800 px-4 py-3 text-xs font-black text-cyan-100"
+              onClick={() => setPesquisa("")}
+              className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-cyan-100"
             >
-              ♻️ LIMPAR CAMPOS / CONCLUÍDO
+              LIMPAR
+            </button>
+
+            <button
+              onClick={() => setMostrarDownload((prev) => !prev)}
+              className="rounded-md bg-green-700 px-4 py-2 text-xs font-black text-white hover:bg-green-600"
+            >
+              BAIXAR ALUNOS
+            </button>
+
+            <button
+              onClick={() => {
+                setMostrarExcluidos((prev) => !prev);
+                setPesquisa("");
+              }}
+              className={`rounded-md px-4 py-2 text-xs font-black ${
+                mostrarExcluidos
+                  ? "bg-cyan-400 text-black hover:bg-cyan-300"
+                  : "bg-red-700 text-white hover:bg-red-600"
+              }`}
+            >
+              {mostrarExcluidos ? "VER ALUNOS ATIVOS" : "VER EXCLUÍDOS"}
             </button>
           </div>
+        </div>
+
+        {mostrarDownload && (
+          <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4 shadow-2xl">
+            <div className="mb-2 text-xs font-black uppercase text-cyan-300">
+              Selecione a Data Cadastro para baixar
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                type="date"
+                value={dataDownload}
+                onChange={(e) => {
+                  setDataDownload(e.target.value);
+                  setCidadeDownload("TODAS");
+                }}
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
+              />
+
+              <select
+                value={cidadeDownload}
+                onChange={(e) => setCidadeDownload(e.target.value)}
+                className="rounded-md border border-[#1f5b91] bg-white px-4 py-2 text-sm font-bold text-black outline-none focus:border-cyan-400"
+              >
+                <option value="TODAS">Todas as cidades</option>
+                {cidadesDisponiveisDownload.map((cidade) => (
+                  <option key={cidade} value={cidade}>
+                    {cidade}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                onClick={baixarAlunosPorData}
+                className="rounded-md bg-green-700 px-5 py-2 text-xs font-black text-white hover:bg-green-600"
+              >
+                📥 BAIXAR EXCEL
+              </button>
+            </div>
+          </div>
         )}
+
+        <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
+          <div className="min-w-[1200px]">
+            <div className="grid grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
+              <div className="border-r border-[#12375f] p-3">Status</div>
+              <div className="border-r border-[#12375f] p-3">Data cadastro</div>
+              <div className="border-r border-[#12375f] p-3">ID do aluno</div>
+              <div className="border-r border-[#12375f] p-3">Nome completo</div>
+              <div className="border-r border-[#12375f] p-3">Cidade</div>
+              <div className="border-r border-[#12375f] p-3">Tel. responsável</div>
+              <div className="border-r border-[#12375f] p-3">Tel. aluno</div>
+              <div className="border-r border-[#12375f] p-3">Curso contratado</div>
+              <div className="p-3 text-center">Ações</div>
+            </div>
+
+            {filtrados.map((aluno) => (
+              <a
+                key={aluno["ID"]}
+                href={`/aluno/${aluno["ID"]}`}
+                className="grid min-h-[52px] grid-cols-[110px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+              >
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  <span
+                    className={`rounded-md px-3 py-1 text-[10px] font-black ${
+                      aluno["Excluido"] === true
+                        ? "bg-red-950 text-red-300"
+                        : aluno["STATUS"] === "CANCELADO"
+                        ? "bg-yellow-950 text-yellow-300"
+                        : "bg-green-950 text-green-300"
+                    }`}
+                  >
+                    {aluno["Excluido"] === true ? "EXCLUÍDO" : aluno["STATUS"] || "ATIVO"}
+                  </span>
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+                  {aluno["Data Cadastro"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["ID"]}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Aluno"]}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+                  {aluno["Cidade"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Tel. Resp"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Tel. Aluno"] || "-"}
+                </div>
+
+                <div className="flex items-center border-r border-[#12375f] p-3">
+                  {aluno["Curso"] || "-"}
+                </div>
+
+                <div className="flex items-center justify-center p-3">
+                  <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
+                    ✎
+                  </span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
       </section>
     </main>
-  );
-}
-
-function Campo({ label, value, onChange, placeholder, type = "text" }: any) {
-  return (
-    <div className="mb-3 grid grid-cols-[230px_1fr] items-center gap-4">
-      <label className="text-right text-sm font-black text-cyan-300">{label}</label>
-
-      <input
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-[#1f5b91] bg-white px-3 py-2 text-sm font-bold text-black outline-none"
-      />
-    </div>
-  );
-}
-
-function BlocoManual({ label, value, onChange }: any) {
-  return (
-    <label>
-      <div className="mb-1 text-xs font-black text-cyan-300">{label}</div>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={5}
-        className="w-full rounded-md border border-[#1f5b91] bg-white p-3 text-xs font-bold text-black outline-none"
-      />
-    </label>
   );
 }
