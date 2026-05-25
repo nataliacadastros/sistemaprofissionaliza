@@ -376,20 +376,17 @@ export default function GerenciamentoPage() {
     fim.setHours(23, 59, 59, 999);
 
     let alunosDaData = alunos
-      .filter((a) => {
-        const dataAluno =
-          converterDataBR(
-            a["Data Cadastro"]
-          );
+  .filter((a) => {
+    const dataAluno = converterDataBR(a["Data Cadastro"]);
 
-        return (
-          dataAluno >=
-            inicio.getTime() &&
-          dataAluno <= fim.getTime() &&
-          a["Excluido"] !== true
-        );
-      })
-      .sort(ordenarAlunos);
+    return (
+      dataAluno >= inicio.getTime() &&
+      dataAluno <= fim.getTime() &&
+      a["Excluido"] !== true
+    );
+  })
+  .sort(ordenarAlunos)
+  .reverse();
 
     if (cidadeDownload !== "TODAS") {
       alunosDaData = alunosDaData.filter(
