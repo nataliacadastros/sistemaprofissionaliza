@@ -84,7 +84,7 @@ export default function AlunoPage() {
   }, [id, router]);
 
   // =========================
-  // ALTERAR CAMPO
+  // HANDLE CHANGE
   // =========================
 
   function handleChange(
@@ -327,7 +327,7 @@ export default function AlunoPage() {
 
         </div>
 
-        {/* CARD */}
+        {/* CARD PRINCIPAL */}
 
         <div className="rounded-2xl border border-[#12375f] bg-[#071b31] p-6 shadow-2xl">
 
@@ -356,73 +356,114 @@ export default function AlunoPage() {
 
           </div>
 
-          {/* GRID */}
+          {/* CARD ÚNICO */}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="rounded-2xl border border-[#12375f] bg-[#0b2542] p-6">
 
-            {CAMPOS.map(
-              ([campo, label]) => (
-                <div
-                  key={campo}
-                  className="rounded-xl border border-[#12375f] bg-[#0b2542] p-4"
-                >
+            {!modoEdicao ? (
 
-                  <div className="mb-2 text-[11px] font-black uppercase tracking-wide text-cyan-300">
-                    {label}
-                  </div>
+              // =========================
+              // VISUALIZAÇÃO
+              // =========================
 
-                  {modoEdicao ? (
-                    campo ===
-                    "STATUS" ? (
-                      <select
-                        value={
-                          editando[
-                            campo
-                          ] || "ATIVO"
-                        }
-                        onChange={(e) =>
-                          handleChange(
-                            campo,
-                            e.target
-                              .value
-                          )
-                        }
-                        className="w-full rounded-md bg-white px-3 py-2 text-sm font-bold text-black outline-none"
-                      >
-                        <option value="ATIVO">
-                          ATIVO
-                        </option>
+              <div className="space-y-4">
 
-                        <option value="CANCELADO">
-                          CANCELADO
-                        </option>
-                      </select>
-                    ) : (
-                      <input
-                        value={
-                          editando[
-                            campo
-                          ] || ""
-                        }
-                        onChange={(e) =>
-                          handleChange(
-                            campo,
-                            e.target
-                              .value
-                          )
-                        }
-                        className="w-full rounded-md bg-white px-3 py-2 text-sm font-bold text-black outline-none"
-                      />
-                    )
-                  ) : (
-                    <div className="break-words text-sm font-bold text-white">
-                      {aluno[campo] ||
-                        "-"}
+                {CAMPOS.map(
+                  ([campo, label]) => (
+                    <div
+                      key={campo}
+                      className="border-b border-[#12375f] pb-3"
+                    >
+
+                      <div className="mb-1 text-[11px] font-black uppercase tracking-wide text-cyan-300">
+                        {label}
+                      </div>
+
+                      <div className="break-words text-sm font-bold text-white">
+                        {aluno[
+                          campo
+                        ] || "-"}
+                      </div>
+
                     </div>
-                  )}
+                  )
+                )}
 
-                </div>
-              )
+              </div>
+
+            ) : (
+
+              // =========================
+              // EDIÇÃO
+              // =========================
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+
+                {CAMPOS.map(
+                  ([campo, label]) => (
+                    <div
+                      key={campo}
+                      className="rounded-xl border border-[#12375f] bg-[#071b31] p-4"
+                    >
+
+                      <div className="mb-2 text-[11px] font-black uppercase tracking-wide text-cyan-300">
+                        {label}
+                      </div>
+
+                      {campo ===
+                      "STATUS" ? (
+                        <select
+                          value={
+                            editando[
+                              campo
+                            ] ||
+                            "ATIVO"
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            handleChange(
+                              campo,
+                              e.target
+                                .value
+                            )
+                          }
+                          className="w-full rounded-md bg-white px-3 py-2 text-sm font-bold text-black outline-none"
+                        >
+                          <option value="ATIVO">
+                            ATIVO
+                          </option>
+
+                          <option value="CANCELADO">
+                            CANCELADO
+                          </option>
+                        </select>
+                      ) : (
+                        <input
+                          value={
+                            editando[
+                              campo
+                            ] || ""
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            handleChange(
+                              campo,
+                              e.target
+                                .value
+                            )
+                          }
+                          className="w-full rounded-md bg-white px-3 py-2 text-sm font-bold text-black outline-none"
+                        />
+                      )}
+
+                    </div>
+                  )
+                )}
+
+              </div>
+
             )}
 
           </div>
