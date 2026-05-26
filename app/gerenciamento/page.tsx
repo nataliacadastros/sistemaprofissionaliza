@@ -534,6 +534,10 @@ export default function GerenciamentoPage() {
             "📇 CRIAR CONTATOS",
             "/criar-contatos",
           ],
+                [
+            "📥   BAIXAR PERSONALIZADOS",
+            "/baixar-personalizado",
+          ],
         ].map(([tab, href]) => (
           <a
             key={tab}
