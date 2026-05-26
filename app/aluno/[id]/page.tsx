@@ -204,7 +204,7 @@ export default function AlunoPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
+      <main className="flex min-h-screen items-center justify-center bg-[#050816] text-cyan-300">
         CARREGANDO...
       </main>
     );
@@ -215,7 +215,7 @@ export default function AlunoPage() {
   // =========================
 
   return (
-    <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
+    <main className="min-h-screen bg-[#050816] text-slate-200">
 
       {/* MENU */}
 
@@ -270,119 +270,123 @@ export default function AlunoPage() {
 
       <section className="px-4 pb-10 pt-24 md:px-8">
 
-        {/* TOPO */}
+        <div className="mx-auto max-w-[1250px]">
 
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          {/* CARD PRINCIPAL */}
 
-          <div>
+          <div className="relative overflow-hidden rounded-[32px] border border-cyan-400/30 bg-gradient-to-br from-[#081426] via-[#0a1d38] to-[#07111f] p-6 shadow-[0_0_40px_rgba(0,255,255,0.12)]">
 
-            <h1 className="text-2xl font-black text-white">
-              👤 PERFIL DO ALUNO
-            </h1>
+            {/* EFEITO NEON */}
 
-            <p className="text-sm text-cyan-300">
-              ID: {aluno["ID"]}
-            </p>
+            <div className="pointer-events-none absolute inset-0 rounded-[32px] border border-cyan-300/10 shadow-[0_0_80px_rgba(0,255,255,0.08)]" />
 
-          </div>
+            {/* HEADER */}
 
-          <div className="flex flex-wrap gap-2">
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-cyan-400/20 pb-5">
 
-            {!modoEdicao && (
-              <button
-                onClick={() =>
-                  setModoEdicao(true)
-                }
-                className="rounded-md bg-cyan-500 px-5 py-2 text-sm font-black text-black"
-              >
-                ✏️ EDITAR
-              </button>
-            )}
+              <div>
 
-            {modoEdicao && (
-              <>
-                <button
-                  onClick={salvar}
-                  className="rounded-md bg-green-700 px-5 py-2 text-sm font-black text-white"
-                >
-                  💾 SALVAR
-                </button>
+                <div className="mb-3 flex flex-wrap items-center gap-2">
 
-                <button
-                  onClick={() => {
-                    setEditando(aluno);
+                  <div
+                    className={`rounded-full px-4 py-1 text-[11px] font-black tracking-wide ${
+                      aluno["STATUS"] ===
+                      "CANCELADO"
+                        ? "bg-red-600 text-white"
+                        : "bg-green-500 text-black"
+                    }`}
+                  >
+                    {aluno["STATUS"] ||
+                      "ATIVO"}
+                  </div>
 
-                    setModoEdicao(
-                      false
-                    );
-                  }}
-                  className="rounded-md bg-slate-700 px-5 py-2 text-sm font-black text-white"
-                >
-                  CANCELAR
-                </button>
-              </>
-            )}
+                  {aluno["Excluido"] ===
+                    true && (
+                    <div className="rounded-full bg-red-950 px-4 py-1 text-[11px] font-black text-red-300">
+                      EXCLUÍDO
+                    </div>
+                  )}
 
-          </div>
+                </div>
 
-        </div>
+                <h1 className="text-3xl font-black tracking-wide text-white">
+                  PERFIL DO ALUNO
+                </h1>
 
-        {/* CARD PRINCIPAL */}
+                <p className="mt-1 text-sm font-bold text-cyan-300">
+                  ID: {aluno["ID"]}
+                </p>
 
-        <div className="rounded-2xl border border-[#12375f] bg-[#071b31] p-6 shadow-2xl">
+              </div>
 
-          {/* STATUS */}
+              {/* BOTÕES HEADER */}
 
-          <div className="mb-6 flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap gap-2">
 
-            <div
-              className={`rounded-md px-4 py-2 text-xs font-black ${
-                aluno["STATUS"] ===
-                "CANCELADO"
-                  ? "bg-red-600 text-white"
-                  : "bg-green-600 text-white"
-              }`}
-            >
-              {aluno["STATUS"] ||
-                "ATIVO"}
+                {!modoEdicao && (
+                  <button
+                    onClick={() =>
+                      setModoEdicao(
+                        true
+                      )
+                    }
+                    className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-black transition-all hover:scale-105 hover:bg-cyan-300"
+                  >
+                    ✏️ EDITAR
+                  </button>
+                )}
+
+                {modoEdicao && (
+                  <>
+                    <button
+                      onClick={salvar}
+                      className="rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white transition-all hover:scale-105"
+                    >
+                      💾 SALVAR
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setEditando(
+                          aluno
+                        );
+
+                        setModoEdicao(
+                          false
+                        );
+                      }}
+                      className="rounded-2xl bg-slate-700 px-5 py-3 text-sm font-black text-white transition-all hover:scale-105"
+                    >
+                      CANCELAR
+                    </button>
+                  </>
+                )}
+
+              </div>
+
             </div>
 
-            {aluno["Excluido"] ===
-              true && (
-              <div className="rounded-md bg-red-950 px-4 py-2 text-xs font-black text-red-300">
-                EXCLUÍDO
-              </div>
-            )}
-
-          </div>
-
-          {/* CARD ÚNICO */}
-
-          <div className="rounded-2xl border border-[#12375f] bg-[#0b2542] p-6">
+            {/* VISUALIZAÇÃO */}
 
             {!modoEdicao ? (
 
-              // =========================
-              // VISUALIZAÇÃO
-              // =========================
-
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 
                 {CAMPOS.map(
                   ([campo, label]) => (
+
                     <div
                       key={campo}
-                      className="border-b border-[#12375f] pb-3"
+                      className="rounded-2xl border border-cyan-400/10 bg-[#0c2342]/90 p-5 shadow-[0_0_15px_rgba(0,255,255,0.04)] transition-all hover:border-cyan-300/30 hover:shadow-[0_0_20px_rgba(0,255,255,0.12)]"
                     >
 
-                      <div className="mb-1 text-[11px] font-black uppercase tracking-wide text-cyan-300">
+                      <div className="mb-2 text-[11px] font-black uppercase tracking-[1.5px] text-cyan-300">
                         {label}
                       </div>
 
-                      <div className="break-words text-sm font-bold text-white">
-                        {aluno[
-                          campo
-                        ] || "-"}
+                      <div className="break-words text-[15px] font-bold leading-relaxed text-white">
+                        {aluno[campo] ||
+                          "-"}
                       </div>
 
                     </div>
@@ -401,17 +405,19 @@ export default function AlunoPage() {
 
                 {CAMPOS.map(
                   ([campo, label]) => (
+
                     <div
                       key={campo}
-                      className="rounded-xl border border-[#12375f] bg-[#071b31] p-4"
+                      className="rounded-2xl border border-cyan-400/10 bg-[#0c2342]/90 p-5 shadow-[0_0_15px_rgba(0,255,255,0.04)]"
                     >
 
-                      <div className="mb-2 text-[11px] font-black uppercase tracking-wide text-cyan-300">
+                      <div className="mb-2 text-[11px] font-black uppercase tracking-[1.5px] text-cyan-300">
                         {label}
                       </div>
 
                       {campo ===
                       "STATUS" ? (
+
                         <select
                           value={
                             editando[
@@ -428,8 +434,9 @@ export default function AlunoPage() {
                                 .value
                             )
                           }
-                          className="w-full rounded-md bg-white px-3 py-2 text-sm font-bold text-black outline-none"
+                          className="w-full rounded-xl border border-cyan-300/20 bg-white px-4 py-3 text-sm font-bold text-black outline-none"
                         >
+
                           <option value="ATIVO">
                             ATIVO
                           </option>
@@ -437,8 +444,11 @@ export default function AlunoPage() {
                           <option value="CANCELADO">
                             CANCELADO
                           </option>
+
                         </select>
+
                       ) : (
+
                         <input
                           value={
                             editando[
@@ -454,8 +464,9 @@ export default function AlunoPage() {
                                 .value
                             )
                           }
-                          className="w-full rounded-md bg-white px-3 py-2 text-sm font-bold text-black outline-none"
+                          className="w-full rounded-xl border border-cyan-300/20 bg-white px-4 py-3 text-sm font-bold text-black outline-none"
                         />
+
                       )}
 
                     </div>
@@ -466,40 +477,44 @@ export default function AlunoPage() {
 
             )}
 
-          </div>
+            {/* FOOTER */}
 
-          {/* BOTÕES */}
+            <div className="mt-8 flex flex-wrap gap-3 border-t border-cyan-400/20 pt-6">
 
-          <div className="mt-8 flex flex-wrap gap-3">
+              {!aluno["Excluido"] && (
 
-            {!aluno["Excluido"] && (
+                <button
+                  onClick={excluir}
+                  className="rounded-2xl bg-red-700 px-6 py-3 text-sm font-black text-white transition-all hover:scale-105 hover:bg-red-600"
+                >
+                  ❌ EXCLUIR
+                </button>
+
+              )}
+
+              {aluno["Excluido"] && (
+
+                <button
+                  onClick={recuperar}
+                  className="rounded-2xl bg-cyan-500 px-6 py-3 text-sm font-black text-black transition-all hover:scale-105"
+                >
+                  ♻ RECUPERAR
+                </button>
+
+              )}
+
               <button
-                onClick={excluir}
-                className="rounded-md bg-red-700 px-5 py-3 text-sm font-black text-white"
+                onClick={() =>
+                  router.push(
+                    "/gerenciamento"
+                  )
+                }
+                className="rounded-2xl bg-slate-700 px-6 py-3 text-sm font-black text-white transition-all hover:scale-105"
               >
-                ❌ EXCLUIR
+                ← VOLTAR
               </button>
-            )}
 
-            {aluno["Excluido"] && (
-              <button
-                onClick={recuperar}
-                className="rounded-md bg-cyan-600 px-5 py-3 text-sm font-black text-black"
-              >
-                ♻ RECUPERAR
-              </button>
-            )}
-
-            <button
-              onClick={() =>
-                router.push(
-                  "/gerenciamento"
-                )
-              }
-              className="rounded-md bg-slate-700 px-5 py-3 text-sm font-black text-white"
-            >
-              ← VOLTAR
-            </button>
+            </div>
 
           </div>
 
