@@ -836,191 +836,209 @@ export default function GerenciamentoPage() {
 
         {/* TABELA */}
 
-        <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
+<div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
 
-          <div className="min-w-[1500px]">
+  <div className="min-w-[2600px]">
 
-            <div className="grid grid-cols-[110px_120px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] bg-[#0c2743] text-[11px] font-black uppercase text-slate-200">
+    {/* CABEÇALHO */}
 
-              <div className="border-r border-[#12375f] p-3">
-                STATUS
-              </div>
+    <div className="grid bg-[#0c2743] text-[11px] font-black uppercase text-slate-200"
+      style={{
+        gridTemplateColumns:
+          "110px 120px 120px 110px 260px 180px 180px 180px 220px 180px 180px 180px 180px 180px 180px 120px",
+      }}
+    >
 
-              <div className="border-r border-[#12375f] p-3">
-                DATA
-              </div>
+      {[
+        "STATUS",
+        "DATA",
+        "TURMA",
+        "ID",
+        "NOME",
+        "CIDADE",
+        "TEL. RESP",
+        "TEL. ALUNO",
+        "CURSO",
+        "CPF",
+        "PAGAMENTO",
+        "VENDEDOR",
+        "SEC",
+        "DATA MATRÍCULA",
+        "10 CURSOS?",
+        "AÇÕES",
+      ].map((coluna) => (
+        <div
+          key={coluna}
+          className="border-r border-[#12375f] p-3"
+        >
+          {coluna}
+        </div>
+      ))}
 
-              <div className="border-r border-[#12375f] p-3">
-                TURMA
-              </div>
+    </div>
 
-              <div className="border-r border-[#12375f] p-3">
-                ID
-              </div>
+    {/* LINHAS */}
 
-              <div className="border-r border-[#12375f] p-3">
-                NOME
-              </div>
+    {filtrados.map((aluno) => (
 
-              <div className="border-r border-[#12375f] p-3">
-                CIDADE
-              </div>
+      <a
+        key={aluno["ID"]}
+        href={`/aluno/${aluno["ID"]}`}
+        className="grid min-h-[52px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+        style={{
+          gridTemplateColumns:
+            "110px 120px 120px 110px 260px 180px 180px 180px 220px 180px 180px 180px 180px 180px 180px 120px",
+        }}
+      >
 
-              <div className="border-r border-[#12375f] p-3">
-                TEL. RESP
-              </div>
+        {/* STATUS */}
 
-              <div className="border-r border-[#12375f] p-3">
-                TEL. ALUNO
-              </div>
+        <div
+          className="flex items-center border-r border-[#12375f] p-3"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
 
-              <div className="border-r border-[#12375f] p-3">
-                CURSO
-              </div>
+          <button
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
 
-              <div className="p-3 text-center">
-                AÇÕES
-              </div>
+              const statusAtual =
+                aluno["STATUS"] || "ATIVO";
 
-            </div>
+              const novoStatus =
+                statusAtual === "ATIVO"
+                  ? "CANCELADO"
+                  : "ATIVO";
 
-            {filtrados.map((aluno) => (
-              <a
-                key={aluno["ID"]}
-                href={`/aluno/${aluno["ID"]}`}
-                className="grid min-h-[52px] grid-cols-[110px_120px_120px_110px_2fr_1.5fr_1.4fr_1.4fr_2fr_80px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
-              >
+              await supabase
+                .from("backup alunos")
+                .update({
+                  STATUS: novoStatus,
+                })
+                .eq("ID", aluno["ID"]);
 
-                <div
-                  className="flex items-center border-r border-[#12375f] p-3"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-
-                  <button
-                    onClick={async (
-                      e
-                    ) => {
-                      e.preventDefault();
-
-                      e.stopPropagation();
-
-                      const statusAtual =
-                        aluno[
-                          "STATUS"
-                        ] || "ATIVO";
-
-                      const novoStatus =
-                        statusAtual ===
-                        "ATIVO"
-                          ? "CANCELADO"
-                          : "ATIVO";
-
-                      await supabase
-                        .from(
-                          "backup alunos"
-                        )
-                        .update({
-                          STATUS:
-                            novoStatus,
-                        })
-                        .eq(
-                          "ID",
-                          aluno["ID"]
-                        );
-
-                      setAlunos(
-                        (prev) =>
-                          prev.map(
-                            (a) =>
-                              a[
-                                "ID"
-                              ] ===
-                              aluno[
-                                "ID"
-                              ]
-                                ? {
-                                    ...a,
-                                    STATUS:
-                                      novoStatus,
-                                  }
-                                : a
-                          )
-                      );
-                    }}
-                    className={`min-w-[90px] rounded-md px-3 py-1 text-[10px] font-black ${
-                      aluno[
-                        "STATUS"
-                      ] ===
-                      "CANCELADO"
-                        ? "bg-red-600 text-white"
-                        : "bg-green-600 text-white"
-                    }`}
-                  >
-                    {aluno["STATUS"] ||
-                      "ATIVO"}
-                  </button>
-
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
-                  {aluno[
-                    "Data Cadastro"
-                  ] || "-"}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["TURMA"] ||
-                    "-"}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["ID"]}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["Aluno"]}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
-                  {aluno["Cidade"] ||
-                    "-"}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3">
-                  {formatarTelefone(
-                    aluno["Tel. Resp"]
-                  )}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3">
-                  {formatarTelefone(
-                    aluno["Tel. Aluno"]
-                  )}
-                </div>
-
-                <div className="flex items-center border-r border-[#12375f] p-3">
-                  {aluno["Curso"] ||
-                    "-"}
-                </div>
-
-                <div className="flex items-center justify-center p-3">
-                  <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
-                    ✎
-                  </span>
-                </div>
-
-              </a>
-            ))}
-
-          </div>
+              setAlunos((prev) =>
+                prev.map((a) =>
+                  a["ID"] === aluno["ID"]
+                    ? {
+                        ...a,
+                        STATUS: novoStatus,
+                      }
+                    : a
+                )
+              );
+            }}
+            className={`min-w-[90px] rounded-md px-3 py-1 text-[10px] font-black ${
+              aluno["STATUS"] === "CANCELADO"
+                ? "bg-red-600 text-white"
+                : "bg-green-600 text-white"
+            }`}
+          >
+            {aluno["STATUS"] || "ATIVO"}
+          </button>
 
         </div>
 
-      </section>
+        {/* DATA */}
 
-    </main>
-  );
-}
+        <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+          {aluno["Data Cadastro"] || "-"}
+        </div>
+
+        {/* TURMA */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["TURMA"] || "-"}
+        </div>
+
+        {/* ID */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["ID"]}
+        </div>
+
+        {/* NOME */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["Aluno"] || "-"}
+        </div>
+
+        {/* CIDADE */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+          {aluno["Cidade"] || "-"}
+        </div>
+
+        {/* TEL RESP */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {formatarTelefone(aluno["Tel. Resp"])}
+        </div>
+
+        {/* TEL ALUNO */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {formatarTelefone(aluno["Tel. Aluno"])}
+        </div>
+
+        {/* CURSO */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["Curso"] || "-"}
+        </div>
+
+        {/* CPF */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["CPF"] || "-"}
+        </div>
+
+        {/* PAGAMENTO */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["Pagamento"] || "-"}
+        </div>
+
+        {/* VENDEDOR */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["Vendedor"] || "-"}
+        </div>
+
+        {/* SEC */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["SEC"] || "-"}
+        </div>
+
+        {/* DATA MATRÍCULA */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["Data Matrícula"] || "-"}
+        </div>
+
+        {/* 10 CURSOS */}
+
+        <div className="flex items-center border-r border-[#12375f] p-3">
+          {aluno["10 CURSOS?"] || "-"}
+        </div>
+
+        {/* AÇÕES */}
+
+        <div className="flex items-center justify-center p-3">
+          <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
+            ✎
+          </span>
+        </div>
+
+      </a>
+
+    ))}
+
+  </div>
+
+</div>
