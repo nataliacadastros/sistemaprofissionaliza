@@ -585,7 +585,7 @@ export default function GerenciamentoPage() {
 
           </div>
 
-          <div className="flex w-full flex-col gap-3 lg:w-[1000px] lg:flex-row lg:items-center">
+          <div className="flex w-full flex-col gapx-2 py-1 lg:w-[1000px] lg:flex-row lg:items-center">
 
             <input
               value={pesquisa}
@@ -663,7 +663,7 @@ export default function GerenciamentoPage() {
               Download de alunos
             </div>
 
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gapx-2 py-1 lg:grid-cols-4">
 
               <DatePicker
                 selectsRange
@@ -742,7 +742,7 @@ export default function GerenciamentoPage() {
               Edição em lote
             </div>
 
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+            <div className="grid grid-cols-1 gapx-2 py-1 lg:grid-cols-5">
 
               <DatePicker
                 selectsRange
@@ -838,14 +838,14 @@ export default function GerenciamentoPage() {
 
 <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
 
-  <div className="min-w-[1600px]">
+  <div className="min-w-[1350px]">
 
     {/* CABEÇALHO */}
 
     <div className="grid bg-[#0c2743] text-[11px] font-black uppercase text-slate-200"
       style={{
         gridTemplateColumns:
-          "90px 95px 95px 90px 220px 130px 140px 140px 200px 130px 160px 120px 90px 120px 110px 80px",
+          "85px 80px 80px 80px 220px 130px 130px 130px 220px 120px 180px 110px 70px 110px 90px 70px",
       }}
     >
 
@@ -869,7 +869,7 @@ export default function GerenciamentoPage() {
       ].map((coluna) => (
         <div
           key={coluna}
-          className="border-r border-[#12375f] p-3"
+          className="border-r border-[#12375f] px-2 py-1"
         >
           {coluna}
         </div>
@@ -884,17 +884,17 @@ export default function GerenciamentoPage() {
       <a
         key={aluno["ID"]}
         href={`/aluno/${aluno["ID"]}`}
-        className="grid min-h-[52px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+        className="grid min-h-[52px] border-t border-[#12375f] bg-[#071b31] text-[11px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
         style={{
           gridTemplateColumns:
-            "90px 95px 95px 90px 220px 130px 140px 140px 200px 130px 160px 120px 90px 120px 110px 80px",
+            "85px 80px 80px 80px 220px 130px 130px 130px 220px 120px 180px 110px 70px 110px 90px 70px",
         }}
       >
 
         {/* STATUS */}
 
         <div
-          className="flex items-center border-r border-[#12375f] p-3"
+          className="flex items-center border-r border-[#12375f] px-2 py-1"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -945,91 +945,91 @@ export default function GerenciamentoPage() {
 
         {/* DATA */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1 text-cyan-300">
           {aluno["Data Cadastro"] || "-"}
         </div>
 
         {/* TURMA */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["TURMA"] || "-"}
         </div>
 
         {/* ID */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["ID"]}
         </div>
 
         {/* NOME */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["Aluno"] || "-"}
         </div>
 
         {/* CIDADE */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3 text-cyan-300">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1 text-cyan-300">
           {aluno["Cidade"] || "-"}
         </div>
 
         {/* TEL RESP */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {formatarTelefone(aluno["Tel. Resp"])}
         </div>
 
         {/* TEL ALUNO */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {formatarTelefone(aluno["Tel. Aluno"])}
         </div>
 
         {/* CURSO */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["Curso"] || "-"}
         </div>
 
         {/* CPF */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["CPF"] || "-"}
         </div>
 
         {/* PAGAMENTO */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["Pagamento"] || "-"}
         </div>
 
         {/* VENDEDOR */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["Vendedor"] || "-"}
         </div>
 
         {/* SEC */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["SEC"] || "-"}
         </div>
 
         {/* DATA MATRÍCULA */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["Data Matrícula"] || "-"}
         </div>
 
         {/* 10 CURSOS */}
 
-        <div className="flex items-center border-r border-[#12375f] p-3">
+        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
           {aluno["10 CURSOS?"] || "-"}
         </div>
 
         {/* AÇÕES */}
 
-        <div className="flex items-center justify-center p-3">
+        <div className="flex items-center justify-center px-2 py-1">
           <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
             ✎
           </span>
