@@ -838,14 +838,14 @@ export default function GerenciamentoPage() {
 
 <div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
 
-  <div className="min-w-[2600px]">
+  <div className="min-w-[1600px]">
 
     {/* CABEÇALHO */}
 
     <div className="grid bg-[#0c2743] text-[11px] font-black uppercase text-slate-200"
       style={{
         gridTemplateColumns:
-          "110px 120px 120px 110px 260px 180px 180px 180px 220px 180px 180px 180px 180px 180px 180px 120px",
+          "90px 95px 95px 90px 220px 130px 140px 140px 200px 130px 160px 120px 90px 120px 110px 80px",
       }}
     >
 
@@ -887,7 +887,7 @@ export default function GerenciamentoPage() {
         className="grid min-h-[52px] border-t border-[#12375f] bg-[#071b31] text-[14px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
         style={{
           gridTemplateColumns:
-            "110px 120px 120px 110px 260px 180px 180px 180px 220px 180px 180px 180px 180px 180px 180px 120px",
+            "90px 95px 95px 90px 220px 130px 140px 140px 200px 130px 160px 120px 90px 120px 110px 80px",
         }}
       >
 
