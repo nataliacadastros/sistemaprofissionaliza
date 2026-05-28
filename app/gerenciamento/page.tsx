@@ -845,7 +845,7 @@ export default function GerenciamentoPage() {
     <div className="grid bg-[#0c2743] text-[11px] font-black uppercase text-slate-200"
       style={{
         gridTemplateColumns:
-          "85px 80px 80px 80px 220px 130px 130px 130px 220px 120px 180px 110px 70px 110px 90px 70px",
+          "100px 80px 80px 80px 220px 130px 130px 130px 220px 120px 180px 110px 70px 110px 90px 70px",
       }}
     >
 
@@ -932,7 +932,7 @@ export default function GerenciamentoPage() {
                 )
               );
             }}
-            className={`min-w-[90px] rounded-md px-3 py-1 text-[10px] font-black ${
+            className={`w-full rounded-md px-1 py-1 text-[9px] font-black ${
               aluno["STATUS"] === "CANCELADO"
                 ? "bg-red-600 text-white"
                 : "bg-green-600 text-white"
