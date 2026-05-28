@@ -1042,3 +1042,9 @@ export default function GerenciamentoPage() {
   </div>
 
 </div>
+
+      </section>
+
+    </main>
+  );
+}
