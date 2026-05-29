@@ -869,7 +869,7 @@ export default function GerenciamentoPage() {
       ].map((coluna) => (
         <div
           key={coluna}
-          className="border-r border-gray-300 px-2 py-1"
+          className="flex items-center border-r border-gray-300 px-2 py-1"
         >
           {coluna}
         </div>
@@ -1029,7 +1029,7 @@ export default function GerenciamentoPage() {
 
         {/* AÇÕES */}
 
-        <div className="flex items-center justify-center px-2 py-1">
+        <div className="flex items-center justify-center border-r border-gray-300 px-2 py-1">
           <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
             ✎
           </span>
