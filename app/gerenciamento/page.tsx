@@ -845,7 +845,7 @@ export default function GerenciamentoPage() {
     <div className="grid bg-gray-100 text-[11px] font-black uppercase text-black"
       style={{
         gridTemplateColumns:
-          "115px 80px 80px 80px 220px 130px 130px 130px 220px 120px 180px 110px 70px 110px 90px 70px",
+          "100px 80px 80px 80px 220px 130px 130px 130px 220px 120px 180px 110px 70px 110px 90px 70px",
       }}
     >
 
