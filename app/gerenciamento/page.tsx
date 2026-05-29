@@ -853,6 +853,7 @@ export default function GerenciamentoPage() {
         "STATUS",
         "DATA",
         "TURMA",
+        "10 CURSOS?",
         "ID",
         "NOME",
         "CIDADE",
@@ -864,7 +865,6 @@ export default function GerenciamentoPage() {
         "VENDEDOR",
         "SEC",
         "DATA MATRÍCULA",
-        "10 CURSOS?",
         "AÇÕES",
       ].map((coluna) => (
         <div
@@ -887,7 +887,7 @@ export default function GerenciamentoPage() {
         className="grid min-h-[52px] border-t border-gray-300 bg-white text-[11px] font-bold text-black no-underline hover:bg-gray-100"
         style={{
           gridTemplateColumns:
-            "100px 80px 80px 60px 220px 100px 100px 100px 220px 120px 180px 110px 70px 110px 70px 70px",
+            "100px 80px 80px 70px 60px 220px 100px 100px 100px 220px 120px 180px 110px 70px 110px 70px",
         }}
       >
 
@@ -955,6 +955,13 @@ export default function GerenciamentoPage() {
           {aluno["TURMA"] || "-"}
         </div>
 
+        {/* 10 CURSOS */}
+
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
+          {aluno["10 CURSOS?"] || "-"}
+        </div>
+        
+
         {/* ID */}
 
         <div className="flex items-center border-r border-gray-300 px-2 py-1 font-black">
@@ -1020,12 +1027,7 @@ export default function GerenciamentoPage() {
         <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["Data Matrícula"] || "-"}
         </div>
-
-        {/* 10 CURSOS */}
-
-        <div className="flex items-center border-r border-gray-300 px-2 py-1">
-          {aluno["10 CURSOS?"] || "-"}
-        </div>
+        
 
         {/* AÇÕES */}
 
