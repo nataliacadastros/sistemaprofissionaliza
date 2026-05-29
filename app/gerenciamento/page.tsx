@@ -565,7 +565,7 @@ export default function GerenciamentoPage() {
 
       {/* CONTEÚDO */}
 
-      <section className="px-4 pt-20 md:px-8 md:pt-14">
+      <section className="px-2 pt-20 md:px-4 md:pt-14">
 
         {/* TOPO */}
 
