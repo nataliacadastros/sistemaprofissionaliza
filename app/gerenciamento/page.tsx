@@ -845,7 +845,7 @@ export default function GerenciamentoPage() {
     <div className="grid bg-gray-100 text-[11px] font-black uppercase text-black"
       style={{
         gridTemplateColumns:
-          "100px 80px 80px 70px 60px 220px 100px 100px 100px 220px 100px 180px 100px 60px 90px 70px",
+          "100px 80px 80px 70px 60px 220px 100px 100px 100px 220px 100px 180px 100px 60px 90px",
       }}
     >
 
@@ -865,7 +865,6 @@ export default function GerenciamentoPage() {
         "VENDEDOR",
         "SEC",
         "DATA MATRÍCULA",
-        "AÇÕES",
       ].map((coluna) => (
         <div
           key={coluna}
@@ -887,7 +886,7 @@ export default function GerenciamentoPage() {
         className="grid min-h-[52px] border-t border-gray-300 bg-white text-[11px] font-bold text-black no-underline hover:bg-gray-100"
         style={{
           gridTemplateColumns:
-           "100px 80px 80px 70px 60px 220px 100px 100px 100px 220px 100px 180px 100px 60px 90px 70px",
+           "100px 80px 80px 70px 60px 220px 100px 100px 100px 220px 100px 180px 100px 60px 90px",
         }}
       >
 
@@ -1028,14 +1027,6 @@ export default function GerenciamentoPage() {
           {aluno["Data Matrícula"] || "-"}
         </div>
         
-
-        {/* AÇÕES */}
-
-        <div className="flex items-center justify-center border-r border-gray-300 px-2 py-1">
-          <span className="rounded-md bg-cyan-400 px-3 py-2 text-black">
-            ✎
-          </span>
-        </div>
 
       </a>
 
