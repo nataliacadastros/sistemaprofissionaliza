@@ -957,7 +957,7 @@ export default function GerenciamentoPage() {
 
         {/* ID */}
 
-        <div className="flex items-center border-r border-gray-300 px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1 font-black">
           {aluno["ID"]}
         </div>
 
