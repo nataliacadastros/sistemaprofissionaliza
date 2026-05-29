@@ -1,4 +1,3 @@
-```tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import { Geist } from "next/font/google";
@@ -14,9 +13,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="pt-br">
       <body className={geist.className}>
@@ -25,4 +24,3 @@ export default function RootLayout({
     </html>
   );
 }
-```
