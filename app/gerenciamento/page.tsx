@@ -573,7 +573,7 @@ export default function GerenciamentoPage() {
 
           <div>
 
-            <h1 className="text-lg font-black text-white">
+            <h1 className="text-lg font-black text-black">
               {mostrarExcluidos
                 ? "♻ ALUNOS EXCLUÍDOS"
                 : "▣ LISTAGEM DE ALUNOS"}
@@ -602,7 +602,7 @@ export default function GerenciamentoPage() {
               onClick={() =>
                 setPesquisa("")
               }
-              className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-cyan-100"
+              className="rounded-md border border-cyan-800 px-4 py-2 text-xs font-bold text-black-100"
             >
               LIMPAR
             </button>
