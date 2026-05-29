@@ -887,7 +887,7 @@ export default function GerenciamentoPage() {
         className="grid min-h-[52px] border-t border-gray-300 bg-white text-[11px] font-bold text-black no-underline hover:bg-gray-100"
         style={{
           gridTemplateColumns:
-            "100px 80px 80px 70px 60px 220px 100px 100px 100px 220px 120px 180px 110px 70px 110px 70px",
+            "100px 80px 80px 60px 220px 100px 100px 100px 220px 120px 180px 110px 70px 110px 70px 70px",
         }}
       >
 
