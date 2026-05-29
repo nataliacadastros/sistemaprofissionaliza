@@ -490,7 +490,7 @@ export default function GerenciamentoPage() {
 
   if (carregandoLogin) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-cyan-300">
+      <main className="flex min-h-screen items-center justify-center bg-[#0b0e1e] text-blue-700">
         <div className="font-black">
           VERIFICANDO LOGIN...
         </div>
@@ -503,7 +503,7 @@ export default function GerenciamentoPage() {
   // =========================
 
   return (
-    <main className="min-h-screen bg-[#0b0e1e] text-slate-200">
+    <main className="min-h-screen bg-white text-black">
 
       {/* TOPO */}
 
@@ -579,7 +579,7 @@ export default function GerenciamentoPage() {
                 : "▣ LISTAGEM DE ALUNOS"}
             </h1>
 
-            <p className="text-xs text-cyan-300">
+            <p className="text-xs text-blue-700">
               {filtrados.length} registros encontrados
             </p>
 
@@ -657,9 +657,9 @@ export default function GerenciamentoPage() {
         {/* DOWNLOAD */}
 
         {mostrarDownload && (
-          <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4">
+          <div className="mb-5 rounded-xl border border-gray-300 bg-white p-4">
 
-            <div className="mb-3 text-xs font-black uppercase text-cyan-300">
+            <div className="mb-3 text-xs font-black uppercase text-blue-700">
               Download de alunos
             </div>
 
@@ -736,9 +736,9 @@ export default function GerenciamentoPage() {
         {/* EDIÇÃO EM LOTE */}
 
         {mostrarLote && (
-          <div className="mb-5 rounded-xl border border-[#12375f] bg-[#071b31] p-4">
+          <div className="mb-5 rounded-xl border border-gray-300 bg-white p-4">
 
-            <div className="mb-3 text-xs font-black uppercase text-cyan-300">
+            <div className="mb-3 text-xs font-black uppercase text-blue-700">
               Edição em lote
             </div>
 
@@ -836,13 +836,13 @@ export default function GerenciamentoPage() {
 
         {/* TABELA */}
 
-<div className="w-full overflow-x-auto rounded-xl border border-[#12375f] bg-[#071b31] shadow-2xl">
+<div className="w-full overflow-x-auto rounded-xl border border-gray-300 bg-white shadow-md">
 
   <div className="min-w-[1350px]">
 
     {/* CABEÇALHO */}
 
-    <div className="grid bg-[#0c2743] text-[11px] font-black uppercase text-slate-200"
+    <div className="grid bg-gray-100 text-[11px] font-black uppercase text-black"
       style={{
         gridTemplateColumns:
           "100px 80px 80px 80px 220px 130px 130px 130px 220px 120px 180px 110px 70px 110px 90px 70px",
@@ -869,7 +869,7 @@ export default function GerenciamentoPage() {
       ].map((coluna) => (
         <div
           key={coluna}
-          className="border-r border-[#12375f] px-2 py-1"
+          className="border-r border-gray-300 px-2 py-1"
         >
           {coluna}
         </div>
@@ -884,7 +884,7 @@ export default function GerenciamentoPage() {
       <a
         key={aluno["ID"]}
         href={`/aluno/${aluno["ID"]}`}
-        className="grid min-h-[52px] border-t border-[#12375f] bg-[#071b31] text-[11px] font-bold text-slate-100 no-underline hover:bg-[#0b2542]"
+        className="grid min-h-[52px] border-t border-gray-300 bg-white text-[11px] font-bold text-black no-underline hover:bg-gray-100"
         style={{
           gridTemplateColumns:
             "85px 80px 80px 80px 220px 130px 130px 130px 220px 120px 180px 110px 70px 110px 90px 70px",
@@ -894,7 +894,7 @@ export default function GerenciamentoPage() {
         {/* STATUS */}
 
         <div
-          className="flex items-center border-r border-[#12375f] px-2 py-1"
+          className="flex items-center border-r border-gray-300 px-2 py-1"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -945,85 +945,85 @@ export default function GerenciamentoPage() {
 
         {/* DATA */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1 text-cyan-300">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1 text-blue-700">
           {aluno["Data Cadastro"] || "-"}
         </div>
 
         {/* TURMA */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["TURMA"] || "-"}
         </div>
 
         {/* ID */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["ID"]}
         </div>
 
         {/* NOME */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["Aluno"] || "-"}
         </div>
 
         {/* CIDADE */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1 text-cyan-300">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1 text-blue-700">
           {aluno["Cidade"] || "-"}
         </div>
 
         {/* TEL RESP */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {formatarTelefone(aluno["Tel. Resp"])}
         </div>
 
         {/* TEL ALUNO */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {formatarTelefone(aluno["Tel. Aluno"])}
         </div>
 
         {/* CURSO */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["Curso"] || "-"}
         </div>
 
         {/* CPF */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["CPF"] || "-"}
         </div>
 
         {/* PAGAMENTO */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["Pagamento"] || "-"}
         </div>
 
         {/* VENDEDOR */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["Vendedor"] || "-"}
         </div>
 
         {/* SEC */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["SEC"] || "-"}
         </div>
 
         {/* DATA MATRÍCULA */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["Data Matrícula"] || "-"}
         </div>
 
         {/* 10 CURSOS */}
 
-        <div className="flex items-center border-r border-[#12375f] px-2 py-1">
+        <div className="flex items-center border-r border-gray-300 px-2 py-1">
           {aluno["10 CURSOS?"] || "-"}
         </div>
 
