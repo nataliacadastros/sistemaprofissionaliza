@@ -1,6 +1,11 @@
+```tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import { Geist } from "next/font/google";
+
+const geist = Geist({
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "Sistema Profissionaliza",
@@ -14,7 +19,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-br">
-      <body>{children}</body>
+      <body className={geist.className}>
+        {children}
+      </body>
     </html>
   );
 }
+```
