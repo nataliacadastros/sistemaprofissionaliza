@@ -836,7 +836,7 @@ export default function GerenciamentoPage() {
 
         {/* TABELA */}
 
-<div className="w-full overflow-x-auto rounded-xl border border-gray-300 bg-white shadow-md">
+<div className="w-full max-h-[75vh] overflow-auto rounded-xl border border-gray-300 bg-white shadow-md">
 
   <div className="min-w-[1350px]">
 
