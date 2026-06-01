@@ -138,20 +138,43 @@ export default function CriarContatosPage() {
   }, [filtrados, cidadesSel]);
 
   const linhas = useMemo(() => {
-    const arr: string[][] = [];
+  const arr: string[][] = [];
 
-    preview.forEach((a) => {
-      const nome = `${a["ID"]} ${a["Aluno"]}`.toUpperCase();
+  // Mapa: telefone do responsável -> lista de alunos
+  const responsaveis = new Map<string, string[]>();
 
-      const resp = limparTelefone(a["Tel. Resp"]);
-      const aluno = limparTelefone(a["Tel. Aluno"]);
+  preview.forEach((a) => {
+    const nome = `${a["ID"]} ${a["Aluno"]}`.toUpperCase();
 
-      if (resp) arr.push([nome, ",", resp]);
-      if (aluno) arr.push([nome, ",", aluno]);
-    });
+    const resp = limparTelefone(a["Tel. Resp"]);
+    const aluno = limparTelefone(a["Tel. Aluno"]);
 
-    return arr;
-  }, [preview]);
+    // Agrupa alunos pelo telefone do responsável
+    if (resp) {
+      if (!responsaveis.has(resp)) {
+        responsaveis.set(resp, []);
+      }
+
+      responsaveis.get(resp)!.push(nome);
+    }
+
+    // Telefones dos alunos permanecem individuais
+    if (aluno) {
+      arr.push([nome, ",", aluno]);
+    }
+  });
+
+  // Gera uma única linha para cada telefone de responsável
+  responsaveis.forEach((alunos, telefone) => {
+    arr.unshift([
+      alunos.join(" & "),
+      ",",
+      telefone,
+    ]);
+  });
+
+  return arr;
+}, [preview]);
 
   function toggleCidade(cidade: string) {
     setCidadesSel((prev) =>
