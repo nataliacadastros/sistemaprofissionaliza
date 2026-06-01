@@ -243,7 +243,7 @@ export default function CriarContatosPage() {
               type="date"
               value={dataAtual}
               onChange={(e) => setDataAtual(e.target.value)}
-              className="px-3 py-2 text-black"
+              className="px-3 py-2 text-white"
             />
 
             <button
