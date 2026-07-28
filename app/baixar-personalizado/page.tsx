@@ -112,38 +112,42 @@ export default function BaixarPersonalizadoPage() {
         )
       )
       .filter(Boolean)
-      .map((a: any) => ({
-        ID: a["ID"] || "",
+      .map((a: any) => {
+        const rawStatus = String(a["Status"] || a["STATUS"] || "").trim();
+        const statusTratado = rawStatus.toUpperCase() === "CANCELADO" ? "INATIVO" : (rawStatus || "-");
 
-        "NOME COMPLETO":
-          capitalizarNome(
-            a["Aluno"] || ""
-          ),
+        return {
+          ID: a["ID"] || "",
 
-        "TELEFONE RESPONSÁVEL":
-          formatarTelefone(
-            a["Tel. Resp"]
-          ),
+          "NOME COMPLETO":
+            capitalizarNome(
+              a["Aluno"] || ""
+            ),
 
-        "TELEFONE ALUNO":
-          formatarTelefone(
-            a["Tel. Aluno"]
-          ),
+          "STATUS": statusTratado,
 
-        "STATUS":
-          a["Status"] || a["STATUS"] || "-"
-      }));
+          "TELEFONE RESPONSÁVEL":
+            formatarTelefone(
+              a["Tel. Resp"]
+            ),
+
+          "TELEFONE ALUNO":
+            formatarTelefone(
+              a["Tel. Aluno"]
+            ),
+        };
+      });
 
     const ws =
       XLSX.utils.json_to_sheet(dados);
 
-    // Largura das colunas (adicionado a 5ª coluna referente ao STATUS)
+    // Largura das colunas na ordem exata: ID, NOME COMPLETO, STATUS, TEL. RESPONSÁVEL, TEL. ALUNO
     ws["!cols"] = [
       { wch: 15 },
       { wch: 45 },
-      { wch: 25 },
-      { wch: 25 },
       { wch: 18 },
+      { wch: 25 },
+      { wch: 25 },
     ];
 
     Object.keys(dados[0]).forEach(
