@@ -129,16 +129,21 @@ export default function BaixarPersonalizadoPage() {
           formatarTelefone(
             a["Tel. Aluno"]
           ),
+
+        "STATUS":
+          a["Status"] || a["STATUS"] || "-"
       }));
 
     const ws =
       XLSX.utils.json_to_sheet(dados);
 
+    // Largura das colunas (adicionado a 5ª coluna referente ao STATUS)
     ws["!cols"] = [
       { wch: 15 },
       { wch: 45 },
       { wch: 25 },
       { wch: 25 },
+      { wch: 18 },
     ];
 
     Object.keys(dados[0]).forEach(
